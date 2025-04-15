@@ -7,6 +7,10 @@ EuroSAT_MS/
 # Ignore generated data
 data/
 
+# Byte-compiled
+__pycache__/
+.cache/
+
 # Ignore everything in nonimage_data
 nonimage_data/*
 
@@ -19,5 +23,4 @@ nonimage_data/*
 *.zip
 *.tar.gz
 *.ipynb_checkpoints/
-__pycache__/
 .DS_Store
