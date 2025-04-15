@@ -57,7 +57,7 @@ def load_nonimage_data():
     """
     Load and merge all non-image data from CSV files
     """
-    data_dir = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/nonimage_data')
+    data_dir = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/eurosat/nonimage_data')
     dfs = {}
     
     # Load each CSV file
@@ -102,7 +102,7 @@ def create_dataset_index():
     
     # Load world boundaries for country determination
     print("Loading world boundaries...")
-    world_shapefile = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/nonimage_data/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp')
+    world_shapefile = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/eurosat/nonimage_data/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp')
     world = gpd.read_file(world_shapefile)
     
     data = []
@@ -171,7 +171,7 @@ def create_dataset_index():
     df = df.merge(nonimage_df, on='country', how='left')
     
     # Save the final index
-    output_path = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/data/dataset_index.csv')
+    output_path = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/eurosat/data/dataset_index.csv')
     df.to_csv(output_path, index=False)
     print(f"Dataset index saved to {output_path}")
     return df
