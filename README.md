@@ -52,22 +52,6 @@ This repository **does not include the full dataset** due to size. To run the pi
 
 ---
 
-## What is Not Tracked by Git
-
-To avoid pushing large or generated files to GitHub, this repo uses a `.gitignore` file that excludes:
-
-```gitignore
-EuroSAT_MS/
-data/
-nonimage_data/*
-!nonimage_data/nonimage_data.csv
-*.tif
-```
-
-Only the source code, `nonimage_data.csv`, and documentation are tracked.
-
----
-
 ## Notes
 
 - Make sure your `EuroSAT_MS/` folder is correctly structured.
