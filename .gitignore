@@ -12,6 +12,7 @@ nonimage_data/*
 
 # ...except for one CSV file that we do want to track
 !nonimage_data/nonimage_data.csv
+!nonimage_data/ne_10m_admin_0_countries/*
 
 # Optional: ignore other large/temp files
 *.zip
