@@ -25,8 +25,7 @@ eurosat/
 This repository **does not include the full dataset** due to size. To run the pipeline:
 
 1. **Download the EuroSAT_MS dataset**:
-   - Link: [EuroSAT Dataset (MS)](https://madm.dfki.de/files/sentinel/EuroSATallBands.zip)
-   - Note that this is 3GB
+   - Link: [EuroSAT Dataset (MS)](https://madm.dfki.de/files/sentinel/EuroSATallBands.zip) (3GB)
 
 2. **Place the data**:
    - Place the folder `EuroSAT_MS/` (directly from the .zip file above) inside the project root.
