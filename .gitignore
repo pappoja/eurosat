@@ -6,7 +6,12 @@ EuroSAT_MS/
 
 # Ignore generated data
 data/
-nonimage_data/
+
+# Ignore all of nonimage_data/...
+nonimage_data/*
+
+# ...except for one CSV file that we do want to track
+!nonimage_data/nonimage_data.csv
 
 # Optional: ignore other large/temp files
 *.zip
