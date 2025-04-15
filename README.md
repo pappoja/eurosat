@@ -11,8 +11,9 @@ eurosat/
 ├── src/                # All core Python code
 │   └── load_data.py    # Script to generate the `data/` folder
 ├── data/               # Generated training data (ignored from Git)
-├── nonimage_data/      # Source CSVs used to create data/ (only `nonimage_data.csv` is tracked)
-│   └── nonimage_data.csv
+├── nonimage_data/      
+│   └── nonimage_data.csv   # Source CSVs used to create data/
+│   └── ne_10m_admin_0_countries/   # Files for assigning a country to each coordinate pair
 ├── EuroSAT_MS/         # TIFF image files (ignored)
 ├── .gitignore
 └── README.md
