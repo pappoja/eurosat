@@ -25,16 +25,16 @@ eurosat/
 This repository **does not include the full dataset** due to size. To run the pipeline:
 
 1. **Download the EuroSAT_MS dataset**:
-   - Link: [https://github.com/phelber/EuroSAT](https://github.com/phelber/EuroSAT)
+   - Link: [https://madm.dfki.de/files/sentinel/EuroSATallBands.zip](https://github.com/phelber/EuroSAT)
    - You need the `.tif` files (2GB+).
 
 2. **Place the data**:
-   - Create a folder `EuroSAT_MS/` inside the project root.
+   - Create a folder `EuroSAT_MS/` inside the project root (this is created from .zip file).
    - Place **all .tif files** inside that folder:
 
    ```bash
-   eurosat/EuroSAT_MS/AnnualCrop_1.tif
-   eurosat/EuroSAT_MS/Forest_12.tif
+   eurosat/EuroSAT_MS/AnnualCrop/AnnualCrop_1.tif
+   eurosat/EuroSAT_MS/Forest/Forest_1.tif
    ...
    ```
 
