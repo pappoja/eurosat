@@ -26,11 +26,11 @@ This repository **does not include the full dataset** due to size. To run the pi
 
 1. **Download the EuroSAT_MS dataset**:
    - Link: [EuroSAT Dataset (MS)](https://madm.dfki.de/files/sentinel/EuroSATallBands.zip)
-   - You need the `.tif` files (2GB+).
+   - Note that this is 3GB
 
 2. **Place the data**:
-   - Create a folder `EuroSAT_MS/` inside the project root (this is created from .zip file).
-   - Place **all .tif files** inside that folder:
+   - Place the folder `EuroSAT_MS/` (directly from the .zip file above) inside the project root.
+   - This includes the `.tif` files, grouped into folders by each classification label.
 
    ```bash
    eurosat/EuroSAT_MS/AnnualCrop/AnnualCrop_1.tif
@@ -47,7 +47,7 @@ This repository **does not include the full dataset** due to size. To run the pi
 
    This script will:
    - Read all `.csv` files in `nonimage_data/`
-   - Extract 2017 columns and merge them on `country`
+   - Merge country-specific variables on `country`
    - Match metadata to image files in `EuroSAT_MS/`
    - Save the final dataset to `data/`
 
