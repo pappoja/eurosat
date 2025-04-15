@@ -36,6 +36,13 @@ class EuroSatDataset(Dataset):
             # Load all bands and stack them
             image = np.stack([src.read(i) for i in range(1, src.count + 1)])
             
+            # Convert to float32 and normalize to [0, 1]
+            image = image.astype(np.float32)
+            for i in range(image.shape[0]):  # Normalize each band independently
+                band = image[i]
+                if band.max() > band.min():
+                    image[i] = (band - band.min()) / (band.max() - band.min())
+            
         # Get label
         label = self.label_to_idx[self.data_frame.iloc[idx]['label']]
         
@@ -111,14 +118,21 @@ def create_dataset_index():
     print("Processing satellite images...")
     # First pass: collect all image paths and labels
     image_count = 0
-    max_images = 50  # Limit for testing
+    max_images_per_class = 25  # 25 images per class
+    num_classes = 4  # Use first 4 classes
+    class_counts = {}  # Track number of images per class
     
     for class_dir in root_dir.iterdir():
-        if class_dir.is_dir() and image_count < max_images:
+        if class_dir.is_dir():
             class_name = class_dir.name
+            if len(class_counts) >= num_classes:  # Skip if we already have enough classes
+                break
+                
+            class_counts[class_name] = 0
             for img_path in class_dir.glob('*.tif'):
-                if image_count >= max_images:
+                if class_counts[class_name] >= max_images_per_class:
                     break
+                    
                 # Get coordinates and country
                 with rasterio.open(img_path) as src:
                     bounds = src.bounds
@@ -154,9 +168,11 @@ def create_dataset_index():
                     'longitude': float(lon[0]),
                     'country': country
                 })
+                class_counts[class_name] += 1
                 image_count += 1
                 if image_count % 10 == 0:
-                    print(f"Processed {image_count}/{max_images} images...")
+                    print(f"Processed {image_count}/{num_classes * max_images_per_class} images...")
+                    print("Class counts:", class_counts)
     
     # Create initial DataFrame
     print("Creating final dataset...")
