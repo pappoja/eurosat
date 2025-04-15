@@ -1,0 +1,15 @@
+# Ignore all TIFF files in any directory
+*.tif
+
+# Ignore entire EuroSAT_MS directory
+EuroSAT_MS/
+
+# Ignore generated data
+data/
+nonimage_data/
+
+# Optional: ignore other large/temp files
+*.zip
+*.tar.gz
+*.ipynb_checkpoints/
+.DS_Store
