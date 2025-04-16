@@ -56,16 +56,16 @@ def validate(model, val_loader, criterion, device):
     
     return running_loss/len(val_loader), correct/total
 
-def main(data_dir):
+def main(data_dir, image_dir):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
     # Load datasets
     csv_data_dir = data_dir / 'csv_data'
-    train_dataset = EuroSatDataset(csv_data_dir/'train_index.csv', root_dir=data_dir)
-    val_dataset = EuroSatDataset(csv_data_dir/'val_index.csv', root_dir=data_dir)
-    test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=data_dir)
+    train_dataset = EuroSatDataset(csv_data_dir/'train_index.csv', root_dir=image_dir)
+    val_dataset = EuroSatDataset(csv_data_dir/'val_index.csv', root_dir=image_dir)
+    test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=image_dir)
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
@@ -121,11 +121,13 @@ def main(data_dir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train EuroSAT model.')
     parser.add_argument('-d', '--data-dir', type=str, required=True,
-                        help='Directory where the EuroSAT data is stored')
+                        help='Directory where CSVs and metadata are stored')
+    parser.add_argument('--image-dir', type=str, default=None,
+                        help='Directory where image files (EuroSAT_MS) are stored')
+
     args = parser.parse_args()
-
-    # Use the provided directory
     data_dir = Path(args.data_dir)
+    image_dir = Path(args.image_dir) if args.image_dir else data_dir
 
-    # Call the main function with the dataset directory
-    main(data_dir)
+    main(data_dir, image_dir)
+    
