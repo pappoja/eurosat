@@ -8,17 +8,21 @@ import argparse
 import re
 import geopandas as gpd
 from shapely.geometry import Point
+from PIL import Image
 
 class EuroSatDataset(Dataset):
-    def __init__(self, csv_file, transform=None, root_dir=Path(".")):
+    def __init__(self, csv_file, transform=None, root_dir=Path("."), is_tif=False):
         """
         Args:
             csv_file (string): Path to the CSV file with annotations.
             transform (callable, optional): Optional transform to be applied on images.
+            root_dir (string): Directory with all the images.
+            is_tif (bool): Flag indicating if the images are .tif files.
         """
         self.data_frame = pd.read_csv(csv_file)
         self.transform = transform
         self.root_dir = Path(root_dir)
+        self.is_tif = is_tif
         
         # Convert labels to numerical format
         self.label_to_idx = {label: idx for idx, label 
@@ -37,16 +41,23 @@ class EuroSatDataset(Dataset):
             
         # Get image path and load image
         img_path = self.root_dir / self.data_frame.iloc[idx]['image_path']
-        with rasterio.open(img_path) as src:
-            # Load all bands and stack them
-            image = np.stack([src.read(i) for i in range(1, src.count + 1)])
-            
-            # Convert to float32 and normalize to [0, 1]
-            image = image.astype(np.float32)
-            for i in range(image.shape[0]):  # Normalize each band independently
-                band = image[i]
-                if band.max() > band.min():
-                    image[i] = (band - band.min()) / (band.max() - band.min())
+        
+        if self.is_tif:
+            with rasterio.open(img_path) as src:
+                # Load all bands and stack them
+                image = np.stack([src.read(i) for i in range(1, src.count + 1)])
+                
+                # Convert to float32 and normalize to [0, 1]
+                image = image.astype(np.float32)
+                for i in range(image.shape[0]):  # Normalize each band independently
+                    band = image[i]
+                    if band.max() > band.min():
+                        image[i] = (band - band.min()) / (band.max() - band.min())
+        else:
+            # Load .jpg image using PIL
+            image = Image.open(img_path).convert('RGB')
+            image = np.array(image).astype(np.float32) / 255.0  # Normalize to [0, 1]
+            image = image.transpose((2, 0, 1))  # Convert to CxHxW format
             
         # Get label
         label = self.label_to_idx[self.data_frame.iloc[idx]['label']]
