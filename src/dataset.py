@@ -64,15 +64,14 @@ class EuroSatDataset(Dataset):
         }
 
 # Example usage:
-def load_nonimage_data():
+def load_nonimage_data(nonimage_data_dir):
     """
     Load and merge all non-image data from CSV files
     """
-    data_dir = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/eurosat/nonimage_data')
     dfs = {}
     
     # Load each CSV file
-    for csv_file in data_dir.glob('*.csv'):
+    for csv_file in nonimage_data_dir.glob('*.csv'):
         metric_name = csv_file.stem  # filename without extension
         df = pd.read_csv(csv_file)
         dfs[metric_name] = df
@@ -109,15 +108,15 @@ def create_dataset_index(data_dir):
     
     # Load non-image data first
     print("Loading non-image data...")
-    nonimage_df = load_nonimage_data()
+    nonimage_data_dir = data_dir / 'nonimage_data'
+    nonimage_df = load_nonimage_data(nonimage_data_dir)
     
-    # Load world boundaries for country determination
     print("Loading world boundaries...")
-    world_shapefile = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/eurosat/nonimage_data/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp')
+    world_shapefile = nonimage_data_dir / 'ne_10m_admin_0_countries' / 'ne_10m_admin_0_countries.shp'
     world = gpd.read_file(world_shapefile)
     
     data = []
-    root_dir = data_dir/'EuroSAT_MS'
+    root_dir = data_dir / 'EuroSAT_MS'
     
     print("Processing satellite images...")
     # First pass: collect all image paths and labels
@@ -158,7 +157,7 @@ def create_dataset_index(data_dir):
                             break
                 
                 data.append({
-                    'image_path': str(img_path),
+                    'image_path': str(img_path.relative_to(data_dir)),
                     'label': class_name,
                     'latitude': float(lat[0]),
                     'longitude': float(lon[0]),
@@ -183,7 +182,8 @@ def create_dataset_index(data_dir):
     df = df.merge(nonimage_df, on='country', how='left')
     
     # Save the final index
-    output_path = data_dir/'data'/'dataset_index.csv'
+    csv_data_dir = data_dir / 'csv_data'
+    output_path = csv_data_dir / 'dataset_index.csv'
     df.to_csv(output_path, index=False)
     print(f"Dataset index saved to {output_path}")
     return df
@@ -192,7 +192,8 @@ def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
     """
     Create train/val/test splits and save separate CSV files
     """
-    csv_path = data_dir / 'data' / 'dataset_index.csv'
+    csv_data_dir = data_dir / 'csv_data'
+    csv_path = csv_data_dir / 'dataset_index.csv'
     df = pd.read_csv(csv_path)
     
     # Shuffle the data
@@ -207,9 +208,9 @@ def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
     test_df = df.iloc[val_end:]
     
     # Save the splits
-    train_df.to_csv(data_dir / 'data' / 'train.csv', index=False)
-    val_df.to_csv(data_dir / 'data' / 'val.csv', index=False)
-    test_df.to_csv(data_dir / 'data' / 'test.csv', index=False)
+    train_df.to_csv(csv_data_dir / 'train.csv', index=False)
+    val_df.to_csv(csv_data_dir / 'val.csv', index=False)
+    test_df.to_csv(csv_data_dir / 'test.csv', index=False)
 
     print("Data splits created and saved.")
 
@@ -224,9 +225,10 @@ def get_dataloaders(batch_size=32):
     transform = None  # Add your transforms here
     
     # Create datasets
-    train_dataset = EuroSatDataset('../data/train.csv', transform=transform)
-    val_dataset = EuroSatDataset('../data/val.csv', transform=transform)
-    test_dataset = EuroSatDataset('../data/test.csv', transform=transform)
+    csv_data_dir = Path('../data/csv_data')
+    train_dataset = EuroSatDataset(csv_data_dir / 'train.csv', transform=transform)
+    val_dataset = EuroSatDataset(csv_data_dir / 'val.csv', transform=transform)
+    test_dataset = EuroSatDataset(csv_data_dir / 'test.csv', transform=transform)
     
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, 
