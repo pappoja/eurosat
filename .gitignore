@@ -10,7 +10,7 @@ __pycache__/
 
 # Ignore everything in nonimage_data
 /data/nonimage_data/*
-/data/csv_data/*
+/data/csv_data/best_model.pth
 
 # ...except for specific files and subfolders
 !/data/nonimage_data/nonimage_data.csv
