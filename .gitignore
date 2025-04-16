@@ -2,7 +2,8 @@
 *.tif
 
 # Ignore entire EuroSAT_MS directory
-EuroSAT_MS/
+/data/EuroSAT_MS/
+/data/csv_data/
 
 # Byte-compiled
 __pycache__/
