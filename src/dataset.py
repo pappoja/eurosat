@@ -4,6 +4,10 @@ import rasterio
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import argparse
+import re
+import geopandas as gpd
+from shapely.geometry import Point
 
 class EuroSatDataset(Dataset):
     def __init__(self, csv_file, transform=None):
@@ -96,7 +100,7 @@ def load_nonimage_data():
     
     return merged_df
 
-def create_dataset_index():
+def create_dataset_index(data_dir):
     """
     Create the CSV file that indexes all the data
     """
@@ -113,26 +117,18 @@ def create_dataset_index():
     world = gpd.read_file(world_shapefile)
     
     data = []
-    root_dir = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/eurosat/EuroSAT_MS')
+    root_dir = data_dir/'EuroSAT_MS'
     
     print("Processing satellite images...")
     # First pass: collect all image paths and labels
     image_count = 0
-    max_images_per_class = 25  # 25 images per class
-    num_classes = 4  # Use first 4 classes
     class_counts = {}  # Track number of images per class
     
     for class_dir in root_dir.iterdir():
         if class_dir.is_dir():
             class_name = class_dir.name
-            if len(class_counts) >= num_classes:  # Skip if we already have enough classes
-                break
-                
             class_counts[class_name] = 0
             for img_path in class_dir.glob('*.tif'):
-                if class_counts[class_name] >= max_images_per_class:
-                    break
-                    
                 # Get coordinates and country
                 with rasterio.open(img_path) as src:
                     bounds = src.bounds
@@ -171,7 +167,7 @@ def create_dataset_index():
                 class_counts[class_name] += 1
                 image_count += 1
                 if image_count % 10 == 0:
-                    print(f"Processed {image_count}/{num_classes * max_images_per_class} images...")
+                    print(f"Processed {image_count} images...")
                     print("Class counts:", class_counts)
     
     # Create initial DataFrame
@@ -187,35 +183,35 @@ def create_dataset_index():
     df = df.merge(nonimage_df, on='country', how='left')
     
     # Save the final index
-    output_path = Path('/Users/jakepappo/LocalDocuments/Stat288/Project/eurosat/data/dataset_index.csv')
+    output_path = data_dir/'data'/'dataset_index.csv'
     df.to_csv(output_path, index=False)
     print(f"Dataset index saved to {output_path}")
     return df
 
-# Create train/val/test splits
-def create_data_splits(csv_path, train_ratio=0.7, val_ratio=0.15):
+def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
     """
     Create train/val/test splits and save separate CSV files
     """
+    csv_path = data_dir / 'data' / 'dataset_index.csv'
     df = pd.read_csv(csv_path)
     
     # Shuffle the data
-    df = df.sample(frac=1, random_state=288).reset_index(drop=True)
-    
-    # Calculate split indices
-    n = len(df)
-    train_idx = int(n * train_ratio)
-    val_idx = int(n * (train_ratio + val_ratio))
+    df = df.sample(frac=1).reset_index(drop=True)
     
     # Split the data
-    train_df = df[:train_idx]
-    val_df = df[train_idx:val_idx]
-    test_df = df[val_idx:]
+    train_end = int(train_ratio * len(df))
+    val_end = int((train_ratio + val_ratio) * len(df))
     
-    # Save splits (from src)
-    train_df.to_csv('../data/train_index.csv', index=False)
-    val_df.to_csv('../data/val_index.csv', index=False)
-    test_df.to_csv('../data/test_index.csv', index=False)
+    train_df = df.iloc[:train_end]
+    val_df = df.iloc[train_end:val_end]
+    test_df = df.iloc[val_end:]
+    
+    # Save the splits
+    train_df.to_csv(data_dir / 'data' / 'train.csv', index=False)
+    val_df.to_csv(data_dir / 'data' / 'val.csv', index=False)
+    test_df.to_csv(data_dir / 'data' / 'test.csv', index=False)
+
+    print("Data splits created and saved.")
 
 # Create DataLoaders
 def get_dataloaders(batch_size=32):
@@ -228,9 +224,9 @@ def get_dataloaders(batch_size=32):
     transform = None  # Add your transforms here
     
     # Create datasets
-    train_dataset = EuroSatDataset('../data/train_index.csv', transform=transform)
-    val_dataset = EuroSatDataset('../data/val_index.csv', transform=transform)
-    test_dataset = EuroSatDataset('../data/test_index.csv', transform=transform)
+    train_dataset = EuroSatDataset('../data/train.csv', transform=transform)
+    val_dataset = EuroSatDataset('../data/val.csv', transform=transform)
+    test_dataset = EuroSatDataset('../data/test.csv', transform=transform)
     
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, 
@@ -241,3 +237,19 @@ def get_dataloaders(batch_size=32):
                            shuffle=False, num_workers=4)
     
     return train_loader, val_loader, test_loader
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Process EuroSAT dataset.')
+    parser.add_argument('-d', '--data-dir', type=str, required=True,
+                        help='Directory where the EuroSAT data is stored')
+    args = parser.parse_args()
+
+    # Use the provided directory
+    data_dir = Path(args.data_dir)
+    root_dir = data_dir/'EuroSAT_MS'
+    
+    # Create the main dataset index with all features
+    df = create_dataset_index(data_dir)
+
+    # Split into train/val/test
+    create_data_splits(data_dir)
