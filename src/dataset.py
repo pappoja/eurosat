@@ -10,7 +10,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 
 class EuroSatDataset(Dataset):
-    def __init__(self, csv_file, transform=None):
+    def __init__(self, csv_file, transform=None, root_dir=Path(".")):
         """
         Args:
             csv_file (string): Path to the CSV file with annotations.
@@ -18,6 +18,7 @@ class EuroSatDataset(Dataset):
         """
         self.data_frame = pd.read_csv(csv_file)
         self.transform = transform
+        self.root_dir = Path(root_dir)
         
         # Convert labels to numerical format
         self.label_to_idx = {label: idx for idx, label 
@@ -35,7 +36,7 @@ class EuroSatDataset(Dataset):
             idx = idx.tolist()
             
         # Get image path and load image
-        img_path = self.data_frame.iloc[idx]['image_path']
+        img_path = self.root_dir / self.data_frame.iloc[idx]['image_path']
         with rasterio.open(img_path) as src:
             # Load all bands and stack them
             image = np.stack([src.read(i) for i in range(1, src.count + 1)])
@@ -103,6 +104,14 @@ def create_dataset_index(data_dir):
     """
     Create the CSV file that indexes all the data
     """
+    csv_data_dir = data_dir / 'csv_data'
+    output_path = csv_data_dir / 'dataset_index.csv'
+    
+    # Check if the dataset index already exists
+    if output_path.exists():
+        print(f"Dataset index already exists at {output_path}")
+        return pd.read_csv(output_path)
+
     import geopandas as gpd
     from shapely.geometry import Point
     
@@ -182,40 +191,49 @@ def create_dataset_index(data_dir):
     df = df.merge(nonimage_df, on='country', how='left')
     
     # Save the final index
-    csv_data_dir = data_dir / 'csv_data'
-    output_path = csv_data_dir / 'dataset_index.csv'
     df.to_csv(output_path, index=False)
     print(f"Dataset index saved to {output_path}")
     return df
+
 
 def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
     """
     Create train/val/test splits and save separate CSV files
     """
     csv_data_dir = data_dir / 'csv_data'
+    train_path = csv_data_dir / 'train_index.csv'
+    val_path = csv_data_dir / 'val_index.csv'
+    test_path = csv_data_dir / 'test_index.csv'
+
+    # Check if the data splits already exist
+    if train_path.exists() and val_path.exists() and test_path.exists():
+        print("Data splits already exist.")
+        return
+
     csv_path = csv_data_dir / 'dataset_index.csv'
     df = pd.read_csv(csv_path)
     
     # Shuffle the data
     df = df.sample(frac=1).reset_index(drop=True)
     
-    # Split the data
+    # Calculate split indices
     train_end = int(train_ratio * len(df))
-    val_end = int((train_ratio + val_ratio) * len(df))
+    val_end = train_end + int(val_ratio * len(df))
     
+    # Split the data
     train_df = df.iloc[:train_end]
     val_df = df.iloc[train_end:val_end]
     test_df = df.iloc[val_end:]
     
     # Save the splits
-    train_df.to_csv(csv_data_dir / 'train.csv', index=False)
-    val_df.to_csv(csv_data_dir / 'val.csv', index=False)
-    test_df.to_csv(csv_data_dir / 'test.csv', index=False)
+    train_df.to_csv(train_path, index=False)
+    val_df.to_csv(val_path, index=False)
+    test_df.to_csv(test_path, index=False)
+    print(f"Data splits saved to {csv_data_dir}")
 
-    print("Data splits created and saved.")
 
 # Create DataLoaders
-def get_dataloaders(batch_size=32):
+def get_dataloaders(data_dir, batch_size=32):
     """
     Create DataLoaders for train/val/test sets
     """
@@ -225,10 +243,10 @@ def get_dataloaders(batch_size=32):
     transform = None  # Add your transforms here
     
     # Create datasets
-    csv_data_dir = Path('../data/csv_data')
-    train_dataset = EuroSatDataset(csv_data_dir / 'train.csv', transform=transform)
-    val_dataset = EuroSatDataset(csv_data_dir / 'val.csv', transform=transform)
-    test_dataset = EuroSatDataset(csv_data_dir / 'test.csv', transform=transform)
+    csv_data_dir = data_dir / 'csv_data'
+    train_dataset = EuroSatDataset(csv_data_dir / 'train_index.csv', transform=transform, root_dir=data_dir)
+    val_dataset = EuroSatDataset(csv_data_dir / 'val_index.csv', transform=transform, root_dir=data_dir)
+    test_dataset = EuroSatDataset(csv_data_dir / 'test_index.csv', transform=transform, root_dir=data_dir)
     
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, 

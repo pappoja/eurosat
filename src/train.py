@@ -63,14 +63,14 @@ def main(data_dir):
 
     # Load datasets
     csv_data_dir = data_dir / 'csv_data'
-    train_dataset = EuroSatDataset(csv_data_dir/'train.csv')
-    val_dataset = EuroSatDataset(csv_data_dir/'val.csv')
-    test_dataset = EuroSatDataset(csv_data_dir/'test.csv')
+    train_dataset = EuroSatDataset(csv_data_dir/'train_index.csv', root_dir=data_dir)
+    val_dataset = EuroSatDataset(csv_data_dir/'val_index.csv', root_dir=data_dir)
+    test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=data_dir)
 
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=0)
 
     # Get number of classes
     num_classes = len(train_dataset.label_to_idx)
