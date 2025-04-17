@@ -85,7 +85,7 @@ def main(data_dir, image_dir):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
     # Training loop
-    num_epochs = 3
+    num_epochs = 15
     best_val_acc = 0.0
 
     for epoch in range(num_epochs):
