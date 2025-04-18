@@ -11,22 +11,26 @@ from shapely.geometry import Point
 from PIL import Image
 
 class EuroSatDataset(Dataset):
-    def __init__(self, csv_file, transform=None, root_dir=Path("."), is_tif=False):
+    def __init__(self, csv_file, transform=None, root_dir=Path("."), is_tif=False, label_to_idx=None):
         """
         Args:
             csv_file (string): Path to the CSV file with annotations.
             transform (callable, optional): Optional transform to be applied on images.
             root_dir (string): Directory with all the images.
             is_tif (bool): Flag indicating if the images are .tif files.
+            label_to_idx (dict, optional): Mapping from labels to indices.
         """
         self.data_frame = pd.read_csv(csv_file)
         self.transform = transform
         self.root_dir = Path(root_dir)
         self.is_tif = is_tif
         
-        # Convert labels to numerical format
-        self.label_to_idx = {label: idx for idx, label 
-                            in enumerate(self.data_frame['label'].unique())}
+        # Use provided label_to_idx or create a new one
+        if label_to_idx is not None:
+            self.label_to_idx = label_to_idx
+        else:
+            self.label_to_idx = {label: idx for idx, label 
+                                in enumerate(self.data_frame['label'].unique())}
         
         # Get the names of non-image features
         self.feature_columns = [col for col in self.data_frame.columns 

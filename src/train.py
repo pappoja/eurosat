@@ -8,6 +8,7 @@ from dataset import EuroSatDataset
 from tqdm import tqdm
 from model.resnet import ResNet50
 import argparse
+import pandas as pd
 
 def train_epoch(model, train_loader, criterion, optimizer, device):
     model.train()
@@ -63,9 +64,17 @@ def main(data_dir, image_dir):
 
     # Load datasets
     csv_data_dir = data_dir / 'csv_data'
-    train_dataset = EuroSatDataset(csv_data_dir/'train_index.csv', root_dir=image_dir)
-    val_dataset = EuroSatDataset(csv_data_dir/'val_index.csv', root_dir=image_dir)
-    test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=image_dir)
+    
+    # Create a unified label_to_idx mapping
+    train_df = pd.read_csv(csv_data_dir/'train_index.csv')
+    val_df = pd.read_csv(csv_data_dir/'val_index.csv')
+    test_df = pd.read_csv(csv_data_dir/'test_index.csv')
+    all_labels = pd.concat([train_df['label'], val_df['label'], test_df['label']]).unique()
+    label_to_idx = {label: idx for idx, label in enumerate(all_labels)}
+
+    train_dataset = EuroSatDataset(csv_data_dir/'train_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
+    val_dataset = EuroSatDataset(csv_data_dir/'val_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
+    test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
@@ -130,4 +139,3 @@ if __name__ == '__main__':
     image_dir = Path(args.image_dir) if args.image_dir else data_dir
 
     main(data_dir, image_dir)
-    
