@@ -7,8 +7,10 @@ from pathlib import Path
 from dataset import EuroSatDataset
 from tqdm import tqdm
 from model.resnet import ResNet50
+from model.biresnet import BiResNet
 import argparse
 import pandas as pd
+
 
 def train_epoch(model, train_loader, criterion, optimizer, device):
     model.train()
@@ -20,9 +22,13 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     for batch in pbar:
         images = batch['image'].to(device)
         labels = batch['label'].to(device)
+        features = batch['features'].to(device) if isinstance(model, BiResNet) else None
         
         optimizer.zero_grad()
-        outputs = model(images)
+        if features is not None:
+            outputs = model(images, features)
+        else:
+            outputs = model(images)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -36,6 +42,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     
     return running_loss/len(train_loader), correct/total
 
+
 def validate(model, val_loader, criterion, device):
     model.eval()
     running_loss = 0.0
@@ -46,8 +53,12 @@ def validate(model, val_loader, criterion, device):
         for batch in val_loader:
             images = batch['image'].to(device)
             labels = batch['label'].to(device)
+            features = batch['features'].to(device) if isinstance(model, BiResNet) else None
             
-            outputs = model(images)
+            if features is not None:
+                outputs = model(images, features)
+            else:
+                outputs = model(images)
             loss = criterion(outputs, labels)
             
             running_loss += loss.item()
@@ -57,7 +68,8 @@ def validate(model, val_loader, criterion, device):
     
     return running_loss/len(val_loader), correct/total
 
-def main(data_dir, image_dir):
+
+def main(data_dir, image_dir, model_type):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
@@ -86,7 +98,11 @@ def main(data_dir, image_dir):
     print(f"Number of classes: {num_classes}")
 
     # Create model
-    model = ResNet50(num_classes).to(device)
+    if model_type == 'biresnet':
+        num_non_image_features = len(train_dataset.feature_columns)
+        model = BiResNet(num_classes, num_non_image_features).to(device)
+    else:
+        model = ResNet50(num_classes).to(device)
 
     # Set up training parameters
     criterion = nn.CrossEntropyLoss()
@@ -127,15 +143,18 @@ def main(data_dir, image_dir):
     test_loss, test_acc = validate(model, test_loader, criterion, device)
     print(f"\nTest Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train EuroSAT model.')
     parser.add_argument('-d', '--data-dir', type=str, required=True,
                         help='Directory where CSVs and metadata are stored')
     parser.add_argument('--image-dir', type=str, default=None,
                         help='Directory where image files (EuroSAT_MS) are stored')
-
+    parser.add_argument('-m', '--model', type=str, choices=['resnet', 'biresnet'], default='resnet',
+                        help='Model type to use: resnet or biresnet')
     args = parser.parse_args()
+
     data_dir = Path(args.data_dir)
     image_dir = Path(args.image_dir) if args.image_dir else data_dir
 
-    main(data_dir, image_dir)
+    main(data_dir, image_dir, args.model)
