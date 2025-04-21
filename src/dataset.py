@@ -8,6 +8,7 @@ import argparse
 import re
 import geopandas as gpd
 from shapely.geometry import Point
+from sklearn.preprocessing import StandardScaler
 from PIL import Image
 
 class EuroSatDataset(Dataset):
@@ -35,6 +36,14 @@ class EuroSatDataset(Dataset):
         # Get the names of non-image features
         self.feature_columns = [col for col in self.data_frame.columns 
                               if col not in ['image_path', 'label', 'country_id', 'country']]
+        self.one_hot_columns = [col for col in self.feature_columns if col.startswith("country_")]
+        self.continuous_columns = [col for col in self.feature_columns if col not in self.one_hot_columns]
+
+        # Apply scaling
+        scaler = StandardScaler()
+        self.data_frame[self.continuous_columns] = scaler.fit_transform(
+            self.data_frame[self.continuous_columns]
+        )
 
     def __len__(self):
         return len(self.data_frame)

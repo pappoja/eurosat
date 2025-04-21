@@ -25,6 +25,13 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         labels = batch['label'].to(device)
         features = batch['features'].to(device) if isinstance(model, BiResNet) else None
         
+        if batch_idx == 0:
+            print("Image shape:", images.shape)
+            print("Features shape:", features.shape if features is not None else None)
+            print("Labels:", labels.tolist())
+            if features is not None:
+                print("Feature sample:", features[0].cpu().numpy())
+                
         optimizer.zero_grad()
         if features is not None:
             outputs = model(images, features)
