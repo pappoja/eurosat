@@ -78,17 +78,24 @@ def validate(model, val_loader, criterion, device):
     return running_loss/len(val_loader), correct/total
 
 
-def plot_accuracies(train_accuracies, val_accuracies, save_path):
+def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type):
     plt.figure(figsize=(10, 5))
-    plt.plot(train_accuracies, label='Train Accuracy')
-    plt.plot(val_accuracies, label='Validation Accuracy')
-    best_epoch = int(np.argmax(val_accuracies))
-    best_val_acc = val_accuracies[best_epoch]
+    
+    # Shift x-axis to start from 1
+    epochs = np.arange(1, len(train_accuracies) + 1)
+
+    plt.plot(epochs, train_accuracies, label='Train Accuracy')
+    plt.plot(epochs, val_accuracies, label='Validation Accuracy')
+
+    best_epoch = int(np.argmax(val_accuracies)) + 1  # +1 for 1-based index
+    best_val_acc = val_accuracies[best_epoch - 1]
+
     plt.axvline(best_epoch, color='black', linestyle='--', 
                 label=f'Best validation accuracy: {best_val_acc:.2%}')
+    
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
-    plt.title('Train and Validation Accuracies')
+    plt.title(f'{model_type}: Train and Validation Accuracies')
     plt.legend()
     plt.grid(True)
     plt.savefig(save_path)
@@ -169,7 +176,7 @@ def main(data_dir, image_dir, model_type):
 
     # Plot accuracies and save as image
     hex_id = hex(id(model))
-    plot_accuracies(train_accuracies, val_accuracies, data_dir / f'accuracy_plot_{hex_id}.png')
+    plot_accuracies(train_accuracies, val_accuracies, data_dir / f'accuracy_plot_{hex_id}.png', model_type)
 
     # Load best model and evaluate on test set
     checkpoint = torch.load(data_dir / 'best_model.pth')
