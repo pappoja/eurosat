@@ -42,7 +42,9 @@ class EuroSatDataset(Dataset):
         self.one_hot_columns = [col for col in self.feature_columns if col.startswith("country_")]
         self.continuous_columns = [col for col in self.feature_columns if col not in self.one_hot_columns]
 
-        # Exclude latitude and longitude from standardization
+        # Remove country variables from features
+        self.feature_columns = [col for col in self.feature_columns if not col.startswith('country_')]
+        self.feature_columns += ['latitude', 'longitude']
         self.continuous_columns = [col for col in self.continuous_columns if col not in ['latitude', 'longitude']]
 
         # Apply scaling
@@ -84,6 +86,9 @@ class EuroSatDataset(Dataset):
         # Get non-image features
         features = self.data_frame.iloc[idx][self.feature_columns].values.astype(np.float32)
         
+        # Get country index if available
+        country_idx = self.data_frame.iloc[idx]['country_id'] if 'country_id' in self.data_frame.columns else None
+        
         # Apply transforms if any
         if self.transform:
             image = self.transform(image)
@@ -91,6 +96,7 @@ class EuroSatDataset(Dataset):
         return {
             'image': torch.FloatTensor(image),
             'features': torch.FloatTensor(features),
+            'country_idx': torch.tensor(country_idx) if country_idx is not None else None,
             'label': torch.tensor(label)
         }
 

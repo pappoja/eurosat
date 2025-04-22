@@ -25,17 +25,19 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         images = batch['image'].to(device)
         labels = batch['label'].to(device)
         features = batch['features'].to(device) if isinstance(model, BiResNet) else None
+        country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
         
-        if batch_idx == 0:
-            print("Image shape:", images.shape)
-            print("Features shape:", features.shape if features is not None else None)
-            print("Labels:", labels.tolist())
-            if features is not None:
-                print("Feature sample:", features[0].cpu().numpy())
-
+        # if batch_idx == 0:
+        #     print("Image shape:", images.shape)
+        #     print("Features shape:", features.shape if features is not None else None)
+        #     print("Country index:", country_idx if country_idx is not None else None)
+        #     print("Labels:", labels.tolist())
+        #     if features is not None:
+        #         print("Feature sample:", features[0].cpu().numpy())
+        
         optimizer.zero_grad()
-        if features is not None:
-            outputs = model(images, features)
+        if isinstance(model, BiResNet):
+            outputs = model(images, country_idx, features)
         else:
             outputs = model(images)
         loss = criterion(outputs, labels)
@@ -48,6 +50,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         correct += predicted.eq(labels).sum().item()
         
         pbar.set_postfix({'loss': running_loss/total, 'acc': 100.*correct/total})
+        batch_idx += 1
     
     return running_loss/len(train_loader), correct/total
 
@@ -63,9 +66,10 @@ def validate(model, val_loader, criterion, device):
             images = batch['image'].to(device)
             labels = batch['label'].to(device)
             features = batch['features'].to(device) if isinstance(model, BiResNet) else None
+            country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
             
-            if features is not None:
-                outputs = model(images, features)
+            if isinstance(model, BiResNet):
+                outputs = model(images, country_idx, features)
             else:
                 outputs = model(images)
             loss = criterion(outputs, labels)
@@ -133,7 +137,8 @@ def main(data_dir, image_dir, model_type):
     # Create model
     if model_type == 'biresnet':
         num_non_image_features = len(train_dataset.feature_columns)
-        model = BiResNet(num_classes, num_non_image_features).to(device)
+        num_countries = train_df['country_id'].nunique()
+        model = BiResNet(num_classes, num_non_image_features, num_countries).to(device)
     else:
         model = ResNet50(num_classes).to(device)
 
