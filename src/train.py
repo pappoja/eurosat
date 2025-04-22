@@ -91,15 +91,23 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, inp
     plt.plot(epochs, train_accuracies, label='Train Accuracy')
     plt.plot(epochs, val_accuracies, label='Validation Accuracy')
 
-    best_epoch = int(np.argmax(val_accuracies)) + 1  # +1 for 1-based index
+    best_epoch = int(np.argmax(val_accuracies)) + 1
     best_val_acc = val_accuracies[best_epoch - 1]
 
     plt.axvline(best_epoch, color='black', linestyle='--', 
                 label=f'Best validation accuracy: {best_val_acc:.2%}')
     
+    # Set input type for title
+    if input == 'image':
+        input_type = "image-only"
+    elif input == 'image_country':
+        input_type = "image+country"
+    else:
+        input_type = "all data"
+
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
-    plt.title(f'{model_type}: Train and Validation Accuracies ({input})')
+    plt.title(f'{model_type} ({input_type}): Train and Validation Accuracies')
     plt.legend()
     plt.grid(True)
     plt.savefig(save_path / f'{model_type}_{input}_accuracy.png')
@@ -151,7 +159,7 @@ def main(data_dir, image_dir, model_type, input):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
     # Training loop
-    num_epochs = 15
+    num_epochs = 20
     best_val_acc = 0.0
     train_accuracies = []
     val_accuracies = []
