@@ -74,7 +74,7 @@ def validate(model, val_loader, criterion, device):
             if isinstance(model, BiResNet):
                 outputs = model(images, country_idx, features)
             elif isinstance(model, SimpleCNN):
-                outputs = model(images, country_idx, features)
+                outputs = model(images, features, country_idx)
             else:
                 outputs = model(images)
             loss = criterion(outputs, labels)
