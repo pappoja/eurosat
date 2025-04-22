@@ -6,8 +6,8 @@ import numpy as np
 from pathlib import Path
 from dataset import EuroSatDataset
 from tqdm import tqdm
-from model.resnet import ResNet50
-from model.biresnet import BiResNet
+from model.resnet import ResNet50, ResNet18
+from model.biresnet import BiResNet18, BiResNet50
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -24,7 +24,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     for batch in pbar:
         images = batch['image'].to(device)
         labels = batch['label'].to(device)
-        features = batch['features'].to(device) if isinstance(model, BiResNet) else None
+        features = batch['features'].to(device) if (isinstance(model, BiResNet18) or isinstance(model, BiResNet50)) else None
         country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
         
         # if batch_idx == 0:
@@ -36,7 +36,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         #         print("Feature sample:", features[0].cpu().numpy())
         
         optimizer.zero_grad()
-        if isinstance(model, BiResNet):
+        if isinstance(model, BiResNet18) or isinstance(model, BiResNet50):
             outputs = model(images, country_idx, features)
         else:
             outputs = model(images)
@@ -65,7 +65,7 @@ def validate(model, val_loader, criterion, device):
         for batch in val_loader:
             images = batch['image'].to(device)
             labels = batch['label'].to(device)
-            features = batch['features'].to(device) if isinstance(model, BiResNet) else None
+            features = batch['features'].to(device) if (isinstance(model, BiResNet18) or isinstance(model, BiResNet50)) else None
             country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
             
             if isinstance(model, BiResNet):
@@ -140,18 +140,26 @@ def main(data_dir, image_dir, model_type, input):
 
     # Get number of classes
     num_classes = len(train_dataset.label_to_idx)
-    print(f"Number of classes: {num_classes}")
 
-    # Ensure the embedding layer has enough embeddings
-    max_country_idx = max(train_df['country_id'].max(), val_df['country_id'].max(), test_df['country_id'].max())
+    # Extract the number of countries for defining the embedding layer
+    max_country_idx = max(train_dataset.data_frame['country_id'].max(),
+                          val_dataset.data_frame['country_id'].max(),
+                          test_dataset.data_frame['country_id'].max())
     num_countries = int(max_country_idx + 1)
 
     # Create model
-    if model_type == 'biresnet':
+    if model_type == 'biresnet18':
         num_non_image_features = len(train_dataset.feature_columns)
-        model = BiResNet(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
-    else:
+        model = BiResNet18(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
+    elif model_type == 'biresnet50':
+        num_non_image_features = len(train_dataset.feature_columns)
+        model = BiResNet50(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
+    elif model_type == "resnet18":
+        model = ResNet18(num_classes).to(device)
+    elif model_type == "resnet50":
         model = ResNet50(num_classes).to(device)
+    else:
+        raise ValueError(f"Unknown model type: {model_type}. Must be one of: 'biresnet18', 'biresnet50', 'resnet50', 'resnet18'")
 
     # Set up training parameters
     criterion = nn.CrossEntropyLoss()
@@ -210,8 +218,8 @@ if __name__ == '__main__':
                         help='Directory where CSVs and metadata are stored')
     parser.add_argument('--image-dir', type=str, default=None,
                         help='Directory where image files (EuroSAT_MS) are stored')
-    parser.add_argument('-m', '--model', type=str, choices=['resnet', 'biresnet'], default='resnet',
-                        help='Model type to use: resnet or biresnet')
+    parser.add_argument('-m', '--model', type=str, choices=['resnet18', 'resnet50', 'biresnet18', 'biresnet50'], default='resnet18',
+                        help='Model type to use: resnet18, resnet50, biresnet18, or biresnet50')
     parser.add_argument('--input', type=str, choices=['image', 'image_country', 'image_country_all'], default='image',
                         help='Input type to use: image, image_country, or image_country_all')
     args = parser.parse_args()
