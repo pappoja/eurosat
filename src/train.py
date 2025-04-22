@@ -106,7 +106,7 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type):
     plt.close()
 
 
-def main(data_dir, image_dir, model_type):
+def main(data_dir, image_dir, model_type, input):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
@@ -138,7 +138,7 @@ def main(data_dir, image_dir, model_type):
     if model_type == 'biresnet':
         num_non_image_features = len(train_dataset.feature_columns)
         num_countries = train_df['country_id'].nunique()
-        model = BiResNet(num_classes, num_non_image_features, num_countries).to(device)
+        model = BiResNet(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     else:
         model = ResNet50(num_classes).to(device)
 
@@ -202,9 +202,11 @@ if __name__ == '__main__':
                         help='Directory where image files (EuroSAT_MS) are stored')
     parser.add_argument('-m', '--model', type=str, choices=['resnet', 'biresnet'], default='resnet',
                         help='Model type to use: resnet or biresnet')
+    parser.add_argument('--input', type=str, choices=['image', 'image_country', 'image_country_all'], default='image',
+                        help='Input type to use: image, image_country, or image_country_all')
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
     image_dir = Path(args.image_dir) if args.image_dir else data_dir
 
-    main(data_dir, image_dir, args.model)
+    main(data_dir, image_dir, args.model, args.input)
