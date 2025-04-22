@@ -82,7 +82,7 @@ def validate(model, val_loader, criterion, device):
     return running_loss/len(val_loader), correct/total
 
 
-def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type):
+def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, input):
     plt.figure(figsize=(10, 5))
     
     # Shift x-axis to start from 1
@@ -99,10 +99,10 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type):
     
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
-    plt.title(f'{model_type}: Train and Validation Accuracies')
+    plt.title(f'{model_type}: Train and Validation Accuracies ({input})')
     plt.legend()
     plt.grid(True)
-    plt.savefig(save_path)
+    plt.savefig(save_path / f'{model_type}_{input}_accuracy.png')
     plt.close()
 
 
@@ -183,8 +183,7 @@ def main(data_dir, image_dir, model_type, input):
             }, data_dir / 'best_model.pth')
 
     # Plot accuracies and save as image
-    hex_id = hex(id(model))
-    plot_accuracies(train_accuracies, val_accuracies, data_dir / f'accuracy_plot_{hex_id}.png', model_type)
+    plot_accuracies(train_accuracies, val_accuracies, data_dir, model_type, input)
 
     # Load best model and evaluate on test set
     checkpoint = torch.load(data_dir / 'best_model.pth')
@@ -194,7 +193,7 @@ def main(data_dir, image_dir, model_type, input):
 
     # Write test accuracy to results.txt
     with open(data_dir / 'results.txt', 'a') as f:
-        f.write(f"{model_type}: {test_acc:.4f}\n")
+        f.write(f"{model_type} ({input}): {test_acc:.4f}\n")
 
 
 if __name__ == '__main__':
