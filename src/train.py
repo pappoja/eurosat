@@ -134,10 +134,13 @@ def main(data_dir, image_dir, model_type, input):
     num_classes = len(train_dataset.label_to_idx)
     print(f"Number of classes: {num_classes}")
 
+    # Ensure the embedding layer has enough embeddings
+    max_country_idx = max(train_df['country_id'].max(), val_df['country_id'].max(), test_df['country_id'].max())
+    num_countries = int(max_country_idx + 1)
+
     # Create model
     if model_type == 'biresnet':
         num_non_image_features = len(train_dataset.feature_columns)
-        num_countries = train_df['country_id'].nunique()
         model = BiResNet(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     else:
         model = ResNet50(num_classes).to(device)

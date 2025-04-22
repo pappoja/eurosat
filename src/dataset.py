@@ -89,6 +89,10 @@ class EuroSatDataset(Dataset):
         # Get country index if available
         country_idx = self.data_frame.iloc[idx]['country_id'] if 'country_id' in self.data_frame.columns else None
         
+        # Handle NaN values in country_idx by assigning a default index
+        if country_idx is None or np.isnan(country_idx):
+            country_idx = 0
+
         # Apply transforms if any
         if self.transform:
             image = self.transform(image)
@@ -96,7 +100,7 @@ class EuroSatDataset(Dataset):
         return {
             'image': torch.FloatTensor(image),
             'features': torch.FloatTensor(features),
-            'country_idx': torch.tensor(country_idx) if country_idx is not None else None,
+            'country_idx': torch.tensor(country_idx).long(),
             'label': torch.tensor(label)
         }
 
