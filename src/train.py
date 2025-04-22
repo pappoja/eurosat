@@ -82,6 +82,10 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path):
     plt.figure(figsize=(10, 5))
     plt.plot(train_accuracies, label='Train Accuracy')
     plt.plot(val_accuracies, label='Validation Accuracy')
+    best_epoch = int(np.argmax(val_accuracies))
+    best_val_acc = val_accuracies[best_epoch]
+    plt.axvline(best_epoch, color='black', linestyle='--', 
+                label=f'Best validation accuracy: {best_val_acc:.2%}')
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.title('Train and Validation Accuracies')
