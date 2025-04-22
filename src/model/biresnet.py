@@ -3,8 +3,8 @@ import torch.nn as nn
 from torchvision.models import resnet18, resnet50, ResNet18_Weights, ResNet50_Weights
 
 resnet_variants = {
-    'resnet18': (resnet18, ResNet18_Weights.DEFAULT),
-    'resnet50': (resnet50, ResNet50_Weights.DEFAULT),
+    'biresnet18': (resnet18, ResNet18_Weights.DEFAULT),
+    'biresnet50': (resnet50, ResNet50_Weights.DEFAULT),
 }
 
 class BiResNet(nn.Module):
@@ -42,6 +42,10 @@ class BiResNet(nn.Module):
         if input_type == 'image_country_all':
             input_dim += 64
 
+        # Add a linear layer after concatenation
+        # self.fc_post_concat = nn.Linear(input_dim, 128)  
+
+        # Final fully connected layer
         self.fc_combined = nn.Linear(input_dim, num_classes)
 
     def forward(self, x, country_idx=None, non_image_data=None):
@@ -64,5 +68,7 @@ class BiResNet(nn.Module):
         else:
             combined = torch.cat([resnet_features, embedded_country, non_image_features], dim=1)
 
+        # Pass through the new linear layer
+        # combined = torch.relu(self.fc_post_concat(combined))
+
         return self.fc_combined(combined)
-        

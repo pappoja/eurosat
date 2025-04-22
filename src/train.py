@@ -8,6 +8,7 @@ from dataset import EuroSatDataset
 from tqdm import tqdm
 from model.resnet import ResNet
 from model.biresnet import BiResNet
+from model.simplecnn import SimpleCNN
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -24,7 +25,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     for batch in pbar:
         images = batch['image'].to(device)
         labels = batch['label'].to(device)
-        features = batch['features'].to(device) if isinstance(model, BiResNet) else None
+        features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) else None
         country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
         
         # if batch_idx == 0:
@@ -38,6 +39,8 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         optimizer.zero_grad()
         if isinstance(model, BiResNet):
             outputs = model(images, country_idx, features)
+        elif isinstance(model, SimpleCNN):
+            outputs = model(images, features, country_idx)
         else:
             outputs = model(images)
         loss = criterion(outputs, labels)
@@ -65,10 +68,12 @@ def validate(model, val_loader, criterion, device):
         for batch in val_loader:
             images = batch['image'].to(device)
             labels = batch['label'].to(device)
-            features = batch['features'].to(device) if isinstance(model, BiResNet) else None
+            features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) else None
             country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
             
             if isinstance(model, BiResNet):
+                outputs = model(images, country_idx, features)
+            elif isinstance(model, SimpleCNN):
                 outputs = model(images, country_idx, features)
             else:
                 outputs = model(images)
@@ -114,7 +119,7 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, inp
     plt.close()
 
 
-def main(data_dir, image_dir, model_type, input):
+def main(data_dir, image_dir, model_type, input, num_epochs):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
@@ -153,8 +158,11 @@ def main(data_dir, image_dir, model_type, input):
         model = BiResNet(model_type, num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     elif model_type in ['resnet18', 'resnet50']:
         model = ResNet(model_type, num_classes).to(device)
+    elif model_type == 'simplecnn':
+        num_non_image_features = len(train_dataset.feature_columns)
+        model = SimpleCNN(num_classes, input_type=input, num_non_image_features=num_non_image_features, num_countries=num_countries).to(device)
     else:
-        raise ValueError(f"Unknown model type: {model_type}. Must be one of: 'biresnet18', 'biresnet50', 'resnet50', 'resnet18'")
+        raise ValueError(f"Unknown model type: {model_type}. Must be one of: 'biresnet18', 'biresnet50', 'resnet50', 'resnet18', 'simplecnn'")
 
     # Set up training parameters
     criterion = nn.CrossEntropyLoss()
@@ -162,7 +170,6 @@ def main(data_dir, image_dir, model_type, input):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
     # Training loop
-    num_epochs = 20
     best_val_acc = 0.0
     train_accuracies = []
     val_accuracies = []
@@ -213,13 +220,14 @@ if __name__ == '__main__':
                         help='Directory where CSVs and metadata are stored')
     parser.add_argument('--image-dir', type=str, default=None,
                         help='Directory where image files (EuroSAT_MS) are stored')
-    parser.add_argument('-m', '--model', type=str, choices=['resnet18', 'resnet50', 'biresnet18', 'biresnet50'], default='resnet18',
-                        help='Model type to use: resnet18, resnet50, biresnet18, or biresnet50')
+    parser.add_argument('-m', '--model', type=str, choices=['resnet18', 'resnet50', 'biresnet18', 'biresnet50', 'simplecnn'], default='resnet18',
+                        help='Model type to use: resnet18, resnet50, biresnet18, biresnet50, or simplecnn')
     parser.add_argument('--input', type=str, choices=['image', 'image_country', 'image_country_all'], default='image',
                         help='Input type to use: image, image_country, or image_country_all')
+    parser.add_argument('--n-epochs', type=int, default=20, help='Number of epochs to train for')
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
     image_dir = Path(args.image_dir) if args.image_dir else data_dir
 
-    main(data_dir, image_dir, args.model, args.input)
+    main(data_dir, image_dir, args.model, args.input, args.n_epochs)
