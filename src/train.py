@@ -18,6 +18,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     running_loss = 0.0
     correct = 0
     total = 0
+    batch_idx = 0
     
     pbar = tqdm(train_loader, desc='Training')
     for batch in pbar:
@@ -31,7 +32,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
             print("Labels:", labels.tolist())
             if features is not None:
                 print("Feature sample:", features[0].cpu().numpy())
-                
+
         optimizer.zero_grad()
         if features is not None:
             outputs = model(images, features)

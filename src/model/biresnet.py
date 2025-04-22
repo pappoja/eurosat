@@ -18,12 +18,12 @@ class BiResNet(nn.Module):
             self.resnet.conv1.weight.copy_(original_layer.weight)
         
         # Modify the final fully connected layer
-        num_features = self.resnet.fc.in_features
+        self.num_resnet_features = self.resnet.fc.in_features
         self.resnet.fc = nn.Identity()  # Remove the final layer
         
         # Additional layers for non-image data
         self.fc_non_image = nn.Linear(num_non_image_features, 128)
-        self.fc_combined = nn.Linear(num_features + 128, num_classes)
+        self.fc_combined = nn.Linear(self.num_resnet_features + 128, num_classes)
 
     def forward(self, x, non_image_data):
         # Forward pass through ResNet

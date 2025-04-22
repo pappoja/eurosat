@@ -26,6 +26,9 @@ class EuroSatDataset(Dataset):
         self.root_dir = Path(root_dir)
         self.is_tif = is_tif
         
+        # Remove "Unnamed" columns
+        self.data_frame = self.data_frame.loc[:, ~self.data_frame.columns.str.contains("Unnamed")]
+        
         # Use provided label_to_idx or create a new one
         if label_to_idx is not None:
             self.label_to_idx = label_to_idx
@@ -38,6 +41,9 @@ class EuroSatDataset(Dataset):
                               if col not in ['image_path', 'label', 'country_id', 'country']]
         self.one_hot_columns = [col for col in self.feature_columns if col.startswith("country_")]
         self.continuous_columns = [col for col in self.feature_columns if col not in self.one_hot_columns]
+
+        # Exclude latitude and longitude from standardization
+        self.continuous_columns = [col for col in self.continuous_columns if col not in ['latitude', 'longitude']]
 
         # Apply scaling
         scaler = StandardScaler()
