@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class SimpleCNN(nn.Module):
-    def __init__(self, num_classes, input_type='image', num_non_image_features=0, num_countries=0, embedding_dim=16):
+    def __init__(self, num_classes, num_non_image_features, num_countries, input_type='image', embedding_dim=16):
         super().__init__()
         self.input_type = input_type
 
@@ -19,7 +19,7 @@ class SimpleCNN(nn.Module):
         # Country embedding (optional)
         self.embedding_dim = embedding_dim
         if input_type in ['image_country', 'image_country_all']:
-            self.country_embedding = nn.Embedding(num_countries, embedding_dim)
+            self.country_embedding = nn.Embedding(num_embeddings=num_countries, embedding_dim=embedding_dim)
 
         # Non-image features (optional)
         if input_type == 'image_country_all':
@@ -34,7 +34,7 @@ class SimpleCNN(nn.Module):
 
         self.fc = nn.Linear(input_dim, num_classes)
 
-    def forward(self, x, country_idx=None, non_image_data=None):
+    def forward(self, x, features=None, country_idx=None):
         x = self.conv(x)
         x = self.flatten(x)
 
@@ -43,8 +43,8 @@ class SimpleCNN(nn.Module):
         else:
             country_emb = torch.zeros((x.size(0), self.embedding_dim), device=x.device)
 
-        if self.input_type == 'image_country_all' and non_image_data is not None:
-            non_img_feat = torch.relu(self.fc_non_image(non_image_data))
+        if self.input_type == 'image_country_all' and features is not None:
+            non_img_feat = torch.relu(self.fc_non_image(features))
         else:
             non_img_feat = torch.zeros((x.size(0), 32), device=x.device)
 

@@ -160,7 +160,7 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
         model = ResNet(model_type, num_classes).to(device)
     elif model_type == 'simplecnn':
         num_non_image_features = len(train_dataset.feature_columns)
-        model = SimpleCNN(num_classes, input_type=input, num_non_image_features=num_non_image_features, num_countries=num_countries).to(device)
+        model = SimpleCNN(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     else:
         raise ValueError(f"Unknown model type: {model_type}. Must be one of: 'biresnet18', 'biresnet50', 'resnet50', 'resnet18', 'simplecnn'")
 
