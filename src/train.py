@@ -9,6 +9,7 @@ from tqdm import tqdm
 from model.resnet import ResNet
 from model.biresnet import BiResNet
 from model.simplecnn import SimpleCNN
+from model.filmresnet import FiLMResNet
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,7 +26,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     for batch in pbar:
         images = batch['image'].to(device)
         labels = batch['label'].to(device)
-        features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) else None
+        features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) or isinstance(model, FiLMResNet) else None
         country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
         
         # if batch_idx == 0:
@@ -37,7 +38,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         #         print("Feature sample:", features[0].cpu().numpy())
         
         optimizer.zero_grad()
-        if isinstance(model, BiResNet):
+        if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):
             outputs = model(images, country_idx, features)
         elif isinstance(model, SimpleCNN):
             outputs = model(images, features, country_idx)
@@ -71,7 +72,7 @@ def validate(model, val_loader, criterion, device):
             features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) else None
             country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
             
-            if isinstance(model, BiResNet):
+            if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):
                 outputs = model(images, country_idx, features)
             elif isinstance(model, SimpleCNN):
                 outputs = model(images, features, country_idx)
@@ -159,6 +160,9 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
         model = BiResNet(model_type, num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     elif model_type in ['resnet18', 'resnet50']:
         model = ResNet(model_type, num_classes).to(device)
+    elif model_type in ['filmresnet18', 'filmresnet50']:
+        num_non_image_features = len(train_dataset.feature_columns)
+        model = FiLMResNet(model_type, num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     elif model_type == 'simplecnn':
         num_non_image_features = len(train_dataset.feature_columns)
         model = SimpleCNN(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
