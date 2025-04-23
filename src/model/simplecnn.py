@@ -25,13 +25,15 @@ class SimpleCNN(nn.Module):
         if input_type == 'image_country_all':
             self.fc_non_image = nn.Linear(num_non_image_features, 32)
 
-        # Final classifier
+        # Add a linear layer after concatenation
         input_dim = 64
         if input_type in ['image_country', 'image_country_all']:
             input_dim += embedding_dim
         if input_type == 'image_country_all':
             input_dim += 32
+        # self.fc_post_concat = nn.Linear(input_dim, 128)
 
+        # Final classifier
         self.fc = nn.Linear(input_dim, num_classes)
 
     def forward(self, x, features=None, country_idx=None):
@@ -54,5 +56,8 @@ class SimpleCNN(nn.Module):
             combined = torch.cat([x, country_emb], dim=1)
         else:  # 'image_country_all'
             combined = torch.cat([x, country_emb, non_img_feat], dim=1)
+
+        # Pass through the new linear layer
+        # combined = torch.relu(self.fc_post_concat(combined))
 
         return self.fc(combined)
