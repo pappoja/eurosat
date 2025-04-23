@@ -115,6 +115,7 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, inp
     plt.title(f'{model_type} ({input_type}): Train and Validation Accuracies')
     plt.legend()
     plt.grid(True)
+    plt.xticks(epochs)
     plt.savefig(save_path / f'{model_type}_{input}_training.png')
     plt.close()
 
