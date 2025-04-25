@@ -53,19 +53,21 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     return running_loss/len(train_loader), correct/total
 
 
-def validate(model, val_loader, criterion, device):
+def validate(model, val_loader, criterion, device, label_to_idx, model_type, input):
     model.eval()
     running_loss = 0.0
     correct = 0
     total = 0
-    
+    y_true = []
+    y_pred = []
+
     with torch.no_grad():
         for batch in val_loader:
             images = batch['image'].to(device)
             labels = batch['label'].to(device)
             features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) else None
             country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
-            
+
             if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):
                 outputs = model(images, country_idx, features)
             elif isinstance(model, SimpleCNN):
@@ -73,12 +75,19 @@ def validate(model, val_loader, criterion, device):
             else:
                 outputs = model(images)
             loss = criterion(outputs, labels)
-            
+
             running_loss += loss.item()
             _, predicted = outputs.max(1)
             total += labels.size(0)
             correct += predicted.eq(labels).sum().item()
-    
+
+            y_true.extend(labels.cpu().numpy())
+            y_pred.extend(predicted.cpu().numpy())
+
+    # Plot confusion matrix
+    classes = list(label_to_idx.keys())
+    plot_confusion_matrix(y_true, y_pred, classes, "../results", model_type, input, normalize=True, title='Validation Confusion Matrix')
+
     return running_loss/len(val_loader), correct/total
 
 
@@ -111,6 +120,7 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, inp
     plt.legend()
     plt.grid(True)
     plt.xticks(epochs)
+    save_path = Path(save_path)
     plt.savefig(save_path / f'{model_type}_{input}_training.png')
     plt.close()
 
@@ -219,7 +229,7 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
         print(f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
 
         # Validate
-        val_loss, val_acc = validate(model, val_loader, criterion, device)
+        val_loss, val_acc = validate(model, val_loader, criterion, device, label_to_idx, model_type, input)
         val_accuracies.append(val_acc)
         print(f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
 
@@ -234,7 +244,7 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_acc': val_acc,
-            }, data_dir / 'best_model.pth')
+            }, data_dir / f'best_{model_type}_{input}.pth')
 
         # Check early stopping
         early_stopping(val_loss)
@@ -277,7 +287,7 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     # Load best model and evaluate on test set
     checkpoint = torch.load(data_dir / 'best_model.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
-    test_loss, test_acc = validate(model, test_loader, criterion, device)
+    test_loss, test_acc = validate(model, test_loader, criterion, device, label_to_idx, model_type, input)
     print(f"\nTest Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
 
     # Write test accuracy to results.txt
