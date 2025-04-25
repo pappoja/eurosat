@@ -13,6 +13,8 @@ from model.filmresnet import FiLMResNet
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
 
 
 def train_epoch(model, train_loader, criterion, optimizer, device):
@@ -110,6 +112,21 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, inp
     plt.grid(True)
     plt.xticks(epochs)
     plt.savefig(save_path / f'{model_type}_{input}_training.png')
+    plt.close()
+
+
+def plot_confusion_matrix(y_true, y_pred, classes, save_path, model_type, input, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
+    cm = confusion_matrix(y_true, y_pred)
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='.2f' if normalize else 'd', cmap=cmap, xticklabels=classes, yticklabels=classes)
+    plt.title(title)
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    save_path = Path(save_path)
+    plt.savefig(save_path / f'{model_type}_{input}_confusion.png')
     plt.close()
 
 
@@ -226,7 +243,36 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
             break
 
     # Plot accuracies and save as image
-    plot_accuracies(train_accuracies, val_accuracies, data_dir, model_type, input)
+    plot_accuracies(train_accuracies, val_accuracies, "../results", model_type, input)
+
+    # Evaluate on test set
+    test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+    y_true = []
+    y_pred = []
+    model.eval()
+    with torch.no_grad():
+        for batch in test_loader:
+            images = batch['image'].to(device)
+            labels = batch['label'].to(device)
+            features = batch['features'].to(device) if not isinstance(model, ResNet) else None
+            country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
+
+            if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):
+                outputs = model(images, country_idx, features)
+            elif isinstance(model, SimpleCNN):
+                outputs = model(images, features, country_idx)
+            else:
+                outputs = model(images)
+
+            _, preds = torch.max(outputs, 1)
+            y_true.extend(labels.cpu().numpy())
+            y_pred.extend(preds.cpu().numpy())
+
+    # Plot confusion matrix
+    classes = list(label_to_idx.keys())
+    plot_confusion_matrix(y_true, y_pred, classes, "../results", model_type, input, normalize=True)
 
     # Load best model and evaluate on test set
     checkpoint = torch.load(data_dir / 'best_model.pth')
