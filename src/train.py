@@ -26,16 +26,8 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
     for batch in pbar:
         images = batch['image'].to(device)
         labels = batch['label'].to(device)
-        features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) or isinstance(model, FiLMResNet) else None
+        features = batch['features'].to(device) if not isinstance(model, ResNet) else None
         country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
-        
-        # if batch_idx == 0:
-        #     print("Image shape:", images.shape)
-        #     print("Features shape:", features.shape if features is not None else None)
-        #     print("Country index:", country_idx if country_idx is not None else None)
-        #     print("Labels:", labels.tolist())
-        #     if features is not None:
-        #         print("Feature sample:", features[0].cpu().numpy())
         
         optimizer.zero_grad()
         if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):

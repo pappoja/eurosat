@@ -26,15 +26,6 @@ class EuroSatDataset(Dataset):
         self.root_dir = Path(root_dir)
         self.is_tif = is_tif
         
-        # Remove "Unnamed" columns
-        self.data_frame = self.data_frame.loc[:, ~self.data_frame.columns.str.contains("Unnamed")]
-
-        # Map country IDs to consecutive integers
-        country_ids = self.data_frame['country_id'].fillna(0)
-        unique_ids = sorted(country_ids.unique())
-        id_mapping = {id_val: i for i, id_val in enumerate(unique_ids) if id_val != -1}
-        self.data_frame['country_id'] = country_ids.map(id_mapping).astype(int)
-        
         # Use provided label_to_idx or create a new one
         if label_to_idx is not None:
             self.label_to_idx = label_to_idx
@@ -43,19 +34,15 @@ class EuroSatDataset(Dataset):
                                 in enumerate(self.data_frame['label'].unique())}
         
         # Get the names of non-image features
-        self.feature_columns = [col for col in self.data_frame.columns 
-                               if col not in ['image_path', 'label', 'country_id', 'country']]
-        self.one_hot_columns = [col for col in self.feature_columns if col.startswith("country_")]
-        self.continuous_columns = [col for col in self.feature_columns if col not in self.one_hot_columns and col not in ['latitude', 'longitude']]
-
-        # Remove country variables from features
-        self.feature_columns = [col for col in self.feature_columns if not col.startswith('country_')]
-        self.feature_columns += ['latitude', 'longitude']
-
+        self.feature_columns = [
+            'latitude', 'longitude', 'elevation_m', 'humidity_pct', 'ndvi',
+            'night_lights', 'pop_density', 'slope_deg', 'soil_moisture', 'temperature_c'
+        ]
+        
         # Apply scaling
         scaler = StandardScaler()
-        self.data_frame[self.continuous_columns] = scaler.fit_transform(
-            self.data_frame[self.continuous_columns]
+        self.data_frame[self.feature_columns] = scaler.fit_transform(
+            self.data_frame[self.feature_columns]
         )
 
     def __len__(self):
