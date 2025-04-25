@@ -113,6 +113,27 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, inp
     plt.close()
 
 
+class EarlyStopping:
+    def __init__(self, patience=10, delta=0):
+        self.patience = patience
+        self.delta = delta
+        self.best_score = None
+        self.early_stop = False
+        self.counter = 0
+
+    def __call__(self, val_loss):
+        score = -val_loss
+        if self.best_score is None:
+            self.best_score = score
+        elif score < self.best_score + self.delta:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.counter = 0
+
+
 def main(data_dir, image_dir, model_type, input, num_epochs):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -170,6 +191,7 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     best_val_acc = 0.0
     train_accuracies = []
     val_accuracies = []
+    early_stopping = EarlyStopping(patience=10)
 
     for epoch in range(num_epochs):
         print(f"\nEpoch {epoch+1}/{num_epochs}")
@@ -196,6 +218,12 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_acc': val_acc,
             }, data_dir / 'best_model.pth')
+
+        # Check early stopping
+        early_stopping(val_loss)
+        if early_stopping.early_stop:
+            print("Early stopping triggered.")
+            break
 
     # Plot accuracies and save as image
     plot_accuracies(train_accuracies, val_accuracies, data_dir, model_type, input)
