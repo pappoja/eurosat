@@ -9,12 +9,16 @@ This repository contains code to work with the EuroSAT_MS dataset (13-band Senti
 ```
 eurosat/
 ├── src/                # All core Python code
+│   ├── dataset.py      # Dataset handling and preprocessing
+│   ├── train.py        # Training script for models
 │   └── load_data.py    # Script to generate the `data/` folder
 ├── data/               # Generated training data (ignored from Git)
 ├── nonimage_data/      
-│   └── nonimage_data.csv           # Source CSVs used to create data/
+│   ├── nonimage_data.csv           # Source CSVs used to create data/
 │   └── ne_10m_admin_0_countries/   # Files for assigning a country to each coordinate pair
-├── EuroSAT_MS/         # TIFF image files (ignored)
+├── EuroSAT_MS/         # EuroSAT image files (ignored)
+├── results/            # Output results
+├── google_earth_data.ipynb # Optional: Download and process Google Earth data
 ├── .gitignore
 └── README.md
 ```
@@ -34,9 +38,9 @@ This repository **does not include the full dataset** due to size. To run the pi
 
    ```bash
    eurosat/EuroSAT_MS/AnnualCrop/AnnualCrop_1.tif
-   eurosat/EuroSAT_MS/Forest/Forest_1.tif
-   ...
-   ```
+eurosat/EuroSAT_MS/Forest/Forest_1.tif
+...
+```
 
 3. **Generate the processed data**:
    Run the following script to create the cleaned dataset:
@@ -51,11 +55,30 @@ This repository **does not include the full dataset** due to size. To run the pi
    - Match metadata to image files in `EuroSAT_MS/`
    - Save the final dataset to `data/`
 
+4. **Optional: Download and process Google Earth data**:
+   - Use `google_earth_data.ipynb` to download additional data and remake splits.
+   - Pre-generated CSV files are available in the repository.
+
+---
+
+## Training Models
+
+To train models, use the `train.py` script. This script supports various model architectures and input types.
+
+```bash
+python src/train.py --data-dir <data-dir> --image-dir <image-dir> --model <model-type> --input <input-type> --n_epochs <num-epochs>
+```
+
+- `<data-dir>`: Directory containing the processed CSV data.
+- `<image-dir>`: Directory containing the EuroSAT_MS images.
+- `<model-type>`: Model architecture to use (e.g., `simplecnn`, `resnet18`).
+- `<input-type>`: Input data type (e.g., `image`, `image_country`, `image_country_all`).
+- `<num-epochs>`: Number of training epochs.
+
 ---
 
 ## Notes
 
 - Make sure your `EuroSAT_MS/` folder is correctly structured.
-- You can modify `load_data.py` to support different variables or CSV schemas.
+- You can modify `dataset.py` and `train.py` to support different variables or model configurations.
 - If you want to keep certain files in ignored folders, use exception rules in `.gitignore`.
-
