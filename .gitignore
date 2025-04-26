@@ -3,7 +3,7 @@
 
 # Ignore entire EuroSAT_MS directory
 /data/EuroSAT_MS/
-/data/EuroSAT_MS_RGB/
+/data/EuroSAT_MS_all/
 
 # Byte-compiled
 __pycache__/

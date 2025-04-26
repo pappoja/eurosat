@@ -12,11 +12,11 @@ eurosat/
 │   ├── dataset.py      # Dataset handling and preprocessing
 │   ├── train.py        # Training script for models
 │   └── load_data.py    # Script to generate the `data/` folder
-├── data/               # Generated training data (ignored from Git)
+├── data/               # Generated training data
+│   ├── csv_data/       # CSV files for dataset splits
+│   └── EuroSAT_MS/     # EuroSAT image files (ignored)
 ├── nonimage_data/      
-│   ├── nonimage_data.csv           # Source CSVs used to create data/
 │   └── ne_10m_admin_0_countries/   # Files for assigning a country to each coordinate pair
-├── EuroSAT_MS/         # EuroSAT image files (ignored)
 ├── results/            # Output results
 ├── google_earth_data.ipynb # Optional: Download and process Google Earth data
 ├── .gitignore
@@ -30,17 +30,18 @@ eurosat/
 This repository **does not include the full dataset** due to size. To run the pipeline:
 
 1. **Download the EuroSAT_MS dataset**:
-   - Link: [EuroSAT Dataset (MS)](https://madm.dfki.de/files/sentinel/EuroSATallBands.zip) (3GB)
+   - Link: [EuroSAT Dataset (RGB)](https://madm.dfki.de/files/sentinel/EuroSAT.zip)
 
 2. **Place the data**:
    - Place the folder `EuroSAT_MS/` (directly from the .zip file above) inside the project root.
-   - This includes the `.tif` files, grouped into folders by each classification label.
+   - This includes all `.jpg` files, grouped into folders by each classification label.
+   - Note: The coordinates are NOT included here, but they can be accessed in `data/csv_data/dataset_index.csv`.
 
    ```bash
    eurosat/EuroSAT_MS/AnnualCrop/AnnualCrop_1.tif
-eurosat/EuroSAT_MS/Forest/Forest_1.tif
-...
-```
+   eurosat/EuroSAT_MS/Forest/Forest_1.tif
+   ...
+   ```
 
 3. **Generate the processed data**:
    Run the following script to create the cleaned dataset:

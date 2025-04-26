@@ -26,11 +26,17 @@ class FiLMResNet(nn.Module):
         # Country embedding
         self.country_embedding = nn.Embedding(num_countries, embedding_dim)
 
+        # Determine dimensions
+        if model_type == 'filmresnet18':
+            film_channels = 64
+        elif model_type == 'filmresnet50':
+            film_channels = 256
+
         # FiLM modulator (produces gamma and beta for FiLM layer)
         self.film_layer = nn.Sequential(
             nn.Linear(embedding_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, 128)  # 64 for gamma, 64 for beta
+            nn.Linear(128, 2 * film_channels)
         )
 
         # Non-image data module
@@ -53,8 +59,8 @@ class FiLMResNet(nn.Module):
             country_emb = torch.zeros((x.size(0), self.embedding_dim), device=x.device)
 
         # Get FiLM parameters
-        film_params = self.film_layer(country_emb)  # [B, 128]
-        gamma, beta = film_params.chunk(2, dim=1)   # Each is [B, 64]
+        film_params = self.film_layer(country_emb)  # [B, 2 * film_channels]
+        gamma, beta = film_params.chunk(2, dim=1)   # [B, film_channels] each
 
         # Apply early ResNet layers
         x = self.resnet.conv1(x)
@@ -66,7 +72,7 @@ class FiLMResNet(nn.Module):
         x = self.resnet.layer1(x)
 
         # FiLM: scale & shift per channel
-        gamma = gamma.unsqueeze(-1).unsqueeze(-1)  # [B, 64, 1, 1]
+        gamma = gamma.unsqueeze(-1).unsqueeze(-1)
         beta = beta.unsqueeze(-1).unsqueeze(-1)
         x = gamma * x + beta
 
