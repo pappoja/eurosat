@@ -16,6 +16,9 @@ __pycache__/
 # ...except for specific files and subfolders
 !/data/nonimage_data/nonimage_data.csv
 
+# Ignore everything in results
+/results/*
+
 # Optional: ignore other large/temp files
 *.zip
 *.tar.gz
