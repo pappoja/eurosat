@@ -33,10 +33,10 @@ class SimpleCNN(nn.Module):
             input_dim += 32
 
         # Post-concatenation layer
-        self.fc_post_concat = nn.Linear(input_dim, 128)
+        # self.fc_post_concat = nn.Linear(input_dim, 128)
 
         # Final classifier
-        self.fc = nn.Linear(128, num_classes)
+        self.fc = nn.Linear(input_dim, num_classes)
 
     def forward(self, x, features=None, country_idx=None):
         x = self.conv(x)
@@ -60,6 +60,6 @@ class SimpleCNN(nn.Module):
             combined = torch.cat([x, country_emb, non_img_feat], dim=1)
 
         # Pass through the new linear layer
-        combined = torch.relu(self.fc_post_concat(combined))
+        # combined = torch.relu(self.fc_post_concat(combined))
 
         return self.fc(combined)
