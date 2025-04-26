@@ -59,10 +59,10 @@ def main(data_dir, use_cv):
 
     # Define models
     models = {
-        'Logistic Regression': LogisticRegression(max_iter=5000, solver='saga', C=0.1),
+        'Logistic Regression': LogisticRegression(max_iter=5000, solver='saga', C=1),
         'kNN': KNeighborsClassifier(n_neighbors=3),
-        'SVM': SVC(C=0.1, kernel='linear'),
-        'Random Forest': RandomForestClassifier(n_estimators=200, max_depth=20, min_samples_split=2)
+        'SVM': SVC(C=10, kernel='linear'),
+        'Random Forest': RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=2)
     }
 
     param_grids = {
