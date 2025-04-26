@@ -86,7 +86,7 @@ def validate(model, val_loader, criterion, device, label_to_idx, model_type, inp
 
     # Plot confusion matrix
     classes = list(label_to_idx.keys())
-    plot_confusion_matrix(y_true, y_pred, classes, "../results", model_type, input, normalize=True, title='Validation Confusion Matrix')
+    plot_confusion_matrix(y_true, y_pred, classes, "../results", model_type, input, normalize=True)
 
     return running_loss/len(val_loader), correct/total
 
