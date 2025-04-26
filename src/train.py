@@ -132,7 +132,7 @@ def plot_confusion_matrix(y_true, y_pred, classes, save_path, model_type, input,
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 10))
     sns.heatmap(cm, annot=True, fmt='.2f' if normalize else 'd', cmap=cmap, xticklabels=classes, yticklabels=classes)
     # Set input type for title
     if input == 'image':
@@ -144,7 +144,9 @@ def plot_confusion_matrix(y_true, y_pred, classes, save_path, model_type, input,
     plt.title(f'{model_type} ({input_type}): Confusion matrix')
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    save_path = Path(save_path)
+    plt.xticks(rotation=45, ha='right')  
+    plt.yticks(rotation=0)  
+    plt.tight_layout()  
     plt.savefig(save_path / f'{model_type}_{input}_confusion.png')
     plt.close()
 
