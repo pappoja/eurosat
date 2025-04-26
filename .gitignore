@@ -18,6 +18,7 @@ __pycache__/
 
 # Ignore everything in results
 /results/*
+!/results/.gitkeep
 
 # Optional: ignore other large/temp files
 *.zip
