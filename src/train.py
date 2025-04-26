@@ -127,14 +127,21 @@ def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, inp
     plt.close()
 
 
-def plot_confusion_matrix(y_true, y_pred, classes, save_path, model_type, input, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
+def plot_confusion_matrix(y_true, y_pred, classes, save_path, model_type, input, normalize=False, cmap=plt.cm.Blues):
     cm = confusion_matrix(y_true, y_pred)
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='.2f' if normalize else 'd', cmap=cmap, xticklabels=classes, yticklabels=classes)
-    plt.title(title)
+    # Set input type for title
+    if input == 'image':
+        input_type = "image-only"
+    elif input == 'image_country':
+        input_type = "image+country"
+    else:
+        input_type = "all data"
+    plt.title(f'{model_type} ({input_type}): Confusion matrix')
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     save_path = Path(save_path)
@@ -197,15 +204,15 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     num_countries = int(max_country_idx + 1)
 
     # Create model
-    if model_type in ['biresnet18', 'biresnet50']:
+    if model_type.lower() in ['biresnet18', 'biresnet50']:
         num_non_image_features = len(train_dataset.feature_columns)
         model = BiResNet(model_type, num_classes, num_non_image_features, num_countries, input_type=input).to(device)
-    elif model_type in ['resnet18', 'resnet50']:
+    elif model_type.lower() in ['resnet18', 'resnet50']:
         model = ResNet(model_type, num_classes).to(device)
-    elif model_type in ['filmresnet18', 'filmresnet50']:
+    elif model_type.lower() in ['filmresnet18', 'filmresnet50']:
         num_non_image_features = len(train_dataset.feature_columns)
         model = FiLMResNet(model_type, num_classes, num_non_image_features, num_countries, input_type=input).to(device)
-    elif model_type == 'simplecnn':
+    elif model_type.lower() == 'simplecnn':
         num_non_image_features = len(train_dataset.feature_columns)
         model = SimpleCNN(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     else:
@@ -287,7 +294,7 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     plot_confusion_matrix(y_true, y_pred, classes, "../results", model_type, input, normalize=True)
 
     # Load best model and evaluate on test set
-    checkpoint = torch.load(data_dir / 'best_model.pth')
+    checkpoint = torch.load(data_dir / f'best_{model_type}_{input}.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     test_loss, test_acc = validate(model, test_loader, criterion, device, label_to_idx, model_type, input)
     print(f"\nTest Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
