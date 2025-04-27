@@ -94,19 +94,6 @@ def validate(model, val_loader, criterion, device, label_to_idx, model_type, inp
 def plot_accuracies(train_accuracies, val_accuracies=None, save_path="../results", model_type=None, input=None):
     plt.figure(figsize=(10, 5))
     
-    # Plot train accuracies over epochs
-    epochs = np.arange(1, len(train_accuracies) + 1)
-    plt.plot(epochs, train_accuracies, label='Train Accuracy')
-
-    if val_accuracies is not None:
-        plt.plot(epochs, val_accuracies, label='Validation Accuracy')
-
-        best_epoch = int(np.argmax(val_accuracies)) + 1
-        best_val_acc = val_accuracies[best_epoch - 1]
-
-        plt.axvline(best_epoch, color='black', linestyle='--', 
-                    label=f'Best validation accuracy: {best_val_acc:.2%}')
-    
     # Set input type for title
     if input == 'image':
         input_type = "image-only"
@@ -115,9 +102,24 @@ def plot_accuracies(train_accuracies, val_accuracies=None, save_path="../results
     else:
         input_type = "all data"
 
+    # Plot train accuracies over epochs
+    epochs = np.arange(1, len(train_accuracies) + 1)
+    plt.plot(epochs, train_accuracies, label='Train Accuracy')
+
+    if val_accuracies is not None:
+        plt.title(f'{model_type} ({input_type}): Train and Validation Accuracies')
+        plt.plot(epochs, val_accuracies, label='Validation Accuracy')
+
+        best_epoch = int(np.argmax(val_accuracies)) + 1
+        best_val_acc = val_accuracies[best_epoch - 1]
+
+        plt.axvline(best_epoch, color='black', linestyle='--', 
+                    label=f'Best validation accuracy: {best_val_acc:.2%}')
+    else:
+        plt.title(f'{model_type} ({input_type}): Train Accuracies')
+
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
-    plt.title(f'{model_type} ({input_type}): Train and Validation Accuracies')
     plt.legend()
     plt.grid(True)
     plt.xticks(epochs[::5])
