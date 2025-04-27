@@ -250,12 +250,13 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
         # Save best model
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            best_model_path = Path('../results') / f'best_{model_type}_{input}.pth'
             torch.save({
-                'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'val_acc': val_acc,
-            }, data_dir / f'best_{model_type}_{input}.pth')
+                'epoch': epoch,
+                'loss': val_loss,
+            }, best_model_path)
 
         # Check early stopping
         early_stopping(val_loss)
@@ -296,13 +297,14 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     plot_confusion_matrix(y_true, y_pred, classes, "../results", model_type, input, normalize=True)
 
     # Load best model and evaluate on test set
-    checkpoint = torch.load(data_dir / f'best_{model_type}_{input}.pth')
+    checkpoint = torch.load(Path('../results') / f'best_{model_type}_{input}.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     test_loss, test_acc = validate(model, test_loader, criterion, device, label_to_idx, model_type, input)
     print(f"\nTest Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
 
     # Write test accuracy to results.txt
-    with open(data_dir / 'results.txt', 'a') as f:
+    results_path = Path('../results/results.txt')
+    with open(results_path, 'a') as f:
         f.write(f"{model_type} ({input}): {test_acc:.4f}\n")
 
 
