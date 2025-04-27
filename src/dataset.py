@@ -145,11 +145,11 @@ def create_dataset_index(data_dir):
     
     # Load non-image data first
     print("Loading non-image data...")
-    nonimage_data_dir = data_dir / 'nonimage_data'
+    nonimage_data_dir = data_dir / 'ne_10m_admin_0_countries'
     nonimage_df = load_nonimage_data(nonimage_data_dir)
     
     print("Loading world boundaries...")
-    world_shapefile = nonimage_data_dir / 'ne_10m_admin_0_countries' / 'ne_10m_admin_0_countries.shp'
+    world_shapefile = nonimage_data_dir / 'ne_10m_admin_0_countries.shp'
     world = gpd.read_file(world_shapefile)
     
     data = []

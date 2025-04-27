@@ -20,6 +20,10 @@ __pycache__/
 /results/*
 !/results/.gitkeep
 
+# Ignore everything in ne_10m_admin_0_countries except the shapefile
+/data/ne_10m_admin_0_countries/*
+!/data/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp
+
 # Optional: ignore other large/temp files
 *.zip
 *.tar.gz

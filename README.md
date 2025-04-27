@@ -15,6 +15,7 @@ eurosat/
 ├── data/               # Generated training data
 │   ├── csv_data/       # CSV files for dataset splits
 │   └── EuroSAT_MS/     # EuroSAT image files (ignored)
+│   └── ne_10m_admin_0_countries/     # Shapefile for country boundaries
 ├── nonimage_data/      
 │   └── ne_10m_admin_0_countries/   # Files for assigning a country to each coordinate pair
 ├── results/            # Output results
