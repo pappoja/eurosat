@@ -224,7 +224,7 @@ def create_dataset_index(data_dir):
     return df
 
 
-def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
+def create_data_splits(data_dir, train_ratio=0.8, val_ratio=0.1):
     """
     Create train/val/test splits and save separate CSV files
     """
@@ -232,9 +232,10 @@ def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
     train_path = csv_data_dir / 'train_index.csv'
     val_path = csv_data_dir / 'val_index.csv'
     test_path = csv_data_dir / 'test_index.csv'
+    test_full_path = csv_data_dir / 'test_full_index.csv'
 
     # Check if the data splits already exist
-    if train_path.exists() and val_path.exists() and test_path.exists():
+    if train_path.exists() and val_path.exists() and test_path.exists() and test_full_path.exists():
         print("Data splits already exist.")
         return
 
@@ -252,11 +253,13 @@ def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
     train_df = df.iloc[:train_end]
     val_df = df.iloc[train_end:val_end]
     test_df = df.iloc[val_end:]
+    test_full_df = df.iloc[train_end:]
     
     # Save the splits
     train_df.to_csv(train_path, index=False)
     val_df.to_csv(val_path, index=False)
     test_df.to_csv(test_path, index=False)
+    test_full_df.to_csv(test_full_path, index=False)
     print(f"Data splits saved to {csv_data_dir}")
 
 
@@ -275,6 +278,7 @@ def get_dataloaders(data_dir, batch_size=32):
     train_dataset = EuroSatDataset(csv_data_dir / 'train_index.csv', transform=transform, root_dir=data_dir)
     val_dataset = EuroSatDataset(csv_data_dir / 'val_index.csv', transform=transform, root_dir=data_dir)
     test_dataset = EuroSatDataset(csv_data_dir / 'test_index.csv', transform=transform, root_dir=data_dir)
+    test_full_dataset = EuroSatDataset(csv_data_dir / 'test_full_index.csv', transform=transform, root_dir=data_dir)
     
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, 
@@ -283,8 +287,10 @@ def get_dataloaders(data_dir, batch_size=32):
                           shuffle=False, num_workers=4)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, 
                            shuffle=False, num_workers=4)
+    test_full_loader = DataLoader(test_full_dataset, batch_size=batch_size, 
+                                shuffle=False, num_workers=4)
     
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, test_full_loader
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process EuroSAT dataset.')

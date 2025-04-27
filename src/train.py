@@ -91,20 +91,21 @@ def validate(model, val_loader, criterion, device, label_to_idx, model_type, inp
     return running_loss/len(val_loader), correct/total
 
 
-def plot_accuracies(train_accuracies, val_accuracies, save_path, model_type, input):
+def plot_accuracies(train_accuracies, val_accuracies=None, save_path="../results", model_type=None, input=None):
     plt.figure(figsize=(10, 5))
     
-    # Shift x-axis to start from 1
+    # Plot train accuracies over epochs
     epochs = np.arange(1, len(train_accuracies) + 1)
-
     plt.plot(epochs, train_accuracies, label='Train Accuracy')
-    plt.plot(epochs, val_accuracies, label='Validation Accuracy')
 
-    best_epoch = int(np.argmax(val_accuracies)) + 1
-    best_val_acc = val_accuracies[best_epoch - 1]
+    if val_accuracies is not None:
+        plt.plot(epochs, val_accuracies, label='Validation Accuracy')
 
-    plt.axvline(best_epoch, color='black', linestyle='--', 
-                label=f'Best validation accuracy: {best_val_acc:.2%}')
+        best_epoch = int(np.argmax(val_accuracies)) + 1
+        best_val_acc = val_accuracies[best_epoch - 1]
+
+        plt.axvline(best_epoch, color='black', linestyle='--', 
+                    label=f'Best validation accuracy: {best_val_acc:.2%}')
     
     # Set input type for title
     if input == 'image':
@@ -173,7 +174,7 @@ class EarlyStopping:
             self.counter = 0
 
 
-def main(data_dir, image_dir, model_type, input, num_epochs):
+def main(data_dir, image_dir, model_type, input, num_epochs, use_test_full=False):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
@@ -191,19 +192,18 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     train_dataset = EuroSatDataset(csv_data_dir/'train_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
     val_dataset = EuroSatDataset(csv_data_dir/'val_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
     test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
+    test_full_dataset = EuroSatDataset(csv_data_dir/'test_full_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
 
     # Get number of classes
     num_classes = len(train_dataset.label_to_idx)
 
     # Extract the number of countries for defining the embedding layer
     max_country_idx = max(train_dataset.data_frame['country_id'].max(),
-                          val_dataset.data_frame['country_id'].max(),
-                          test_dataset.data_frame['country_id'].max())
+                          test_full_dataset.data_frame['country_id'].max())
     num_countries = int(max_country_idx + 1)
 
     # Create model
@@ -227,50 +227,76 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
 
     # Training loop
-    best_val_acc = 0.0
-    train_accuracies = []
-    val_accuracies = []
-    early_stopping = EarlyStopping(patience=10)
+    if use_test_full:
+        train_accuracies = []
+        for epoch in range(num_epochs):
+            print(f"\nEpoch {epoch+1}/{num_epochs}")
 
-    for epoch in range(num_epochs):
-        print(f"\nEpoch {epoch+1}/{num_epochs}")
+            # Train
+            train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
+            train_accuracies.append(train_acc)
+            print(f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
 
-        # Train
-        train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
-        train_accuracies.append(train_acc)
-        print(f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
+        best_model_path = Path('../results') / f'best_{model_type}_{input}_full.pth'
+        torch.save({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'epoch': num_epochs,
+            'loss': train_loss,
+        }, best_model_path)
 
-        # Validate
-        val_loss, val_acc = validate(model, val_loader, criterion, device, label_to_idx, model_type, input)
-        val_accuracies.append(val_acc)
-        print(f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
+        print(f"Model saved to {best_model_path}")
 
-        # Update learning rate
-        scheduler.step(val_loss)
+        plot_accuracies(train_accuracies, save_path="../results", model_type=model_type, input=input)
+    else:
+        best_val_acc = 0.0
+        train_accuracies = []
+        val_accuracies = []
+        early_stopping = EarlyStopping(patience=10)
 
-        # Save best model
-        if val_acc > best_val_acc:
-            best_val_acc = val_acc
-            best_model_path = Path('../results') / f'best_{model_type}_{input}.pth'
-            torch.save({
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'epoch': epoch,
-                'loss': val_loss,
-            }, best_model_path)
+        for epoch in range(num_epochs):
+            print(f"\nEpoch {epoch+1}/{num_epochs}")
 
-        # Check early stopping
-        early_stopping(val_loss)
-        if early_stopping.early_stop:
-            print("Early stopping triggered.")
-            break
+            # Train
+            train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, device)
+            train_accuracies.append(train_acc)
+            print(f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
 
-    # Plot accuracies and save as image
-    plot_accuracies(train_accuracies, val_accuracies, "../results", model_type, input)
+            # Validate
+            val_loss, val_acc = validate(model, val_loader, criterion, device, label_to_idx, model_type, input)
+            val_accuracies.append(val_acc)
+            print(f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}")
+
+            # Update learning rate
+            scheduler.step(val_loss)
+
+            # Save best model
+            if val_acc > best_val_acc:
+                best_val_acc = val_acc
+                best_model_path = Path('../results') / f'best_{model_type}_{input}.pth'
+                torch.save({
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'epoch': epoch,
+                    'loss': val_loss,
+                }, best_model_path)
+
+            # Check early stopping
+            early_stopping(val_loss)
+            if early_stopping.early_stop:
+                print("Early stopping triggered.")
+                break
+        
+        # Plot accuracies and save as image
+        plot_accuracies(train_accuracies, val_accuracies, save_path="../results", model_type=model_type, input=input)
 
     # Evaluate on test set
-    test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    if use_test_full:
+        test_dataset = EuroSatDataset(csv_data_dir/'test_full_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
+        test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    else:
+        test_dataset = EuroSatDataset(csv_data_dir/'test_index.csv', root_dir=image_dir, label_to_idx=label_to_idx)
+        test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
     y_true = []
     y_pred = []
@@ -282,7 +308,7 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
             features = batch['features'].to(device) if not isinstance(model, ResNet) else None
             country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
 
-            if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):
+            if isinstance(model, BiResNet):
                 outputs = model(images, country_idx, features)
             elif isinstance(model, SimpleCNN):
                 outputs = model(images, features, country_idx)
@@ -298,8 +324,9 @@ def main(data_dir, image_dir, model_type, input, num_epochs):
     plot_confusion_matrix(y_true, y_pred, classes, "../results", model_type, input, normalize=True)
 
     # Load best model and evaluate on test set
-    checkpoint = torch.load(Path('../results') / f'best_{model_type}_{input}.pth')
-    model.load_state_dict(checkpoint['model_state_dict'])
+    if not use_test_full:
+        checkpoint = torch.load(Path('../results') / f'best_{model_type}_{input}.pth')
+        model.load_state_dict(checkpoint['model_state_dict'])
     test_loss, test_acc = validate(model, test_loader, criterion, device, label_to_idx, model_type, input)
     print(f"\nTest Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
 
@@ -320,9 +347,10 @@ if __name__ == '__main__':
     parser.add_argument('--input', type=str, choices=['image', 'image_country', 'image_country_all'], default='image',
                         help='Input type to use: image, image_country, or image_country_all')
     parser.add_argument('--n-epochs', type=int, default=20, help='Number of epochs to train for')
+    parser.add_argument('--use-test-full', action='store_true', help='Use test_full dataset for training')
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
     image_dir = Path(args.image_dir) if args.image_dir else data_dir
 
-    main(data_dir, image_dir, args.model, args.input, args.n_epochs)
+    main(data_dir, image_dir, args.model, args.input, args.n_epochs, args.use_test_full)
