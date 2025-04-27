@@ -146,7 +146,8 @@ def plot_confusion_matrix(y_true, y_pred, classes, save_path, model_type, input,
     plt.xlabel('Predicted label')
     plt.xticks(rotation=45, ha='right')  
     plt.yticks(rotation=0)  
-    plt.tight_layout()  
+    plt.tight_layout()
+    save_path = Path(save_path)
     plt.savefig(save_path / f'{model_type}_{input}_confusion.png')
     plt.close()
 
