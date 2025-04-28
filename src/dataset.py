@@ -224,7 +224,7 @@ def create_dataset_index(data_dir):
     return df
 
 
-def create_data_splits(data_dir, train_ratio=0.8, val_ratio=0.1):
+def create_data_splits(data_dir, train_ratio=0.7, val_ratio=0.15):
     """
     Create train/val/test splits and save separate CSV files
     """
