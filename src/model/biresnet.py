@@ -43,7 +43,7 @@ class BiResNet(nn.Module):
             input_dim += 64
 
         # Add a linear layer after concatenation
-        # self.fc_post_concat = nn.Linear(input_dim, 128)  
+        self.fc_post_concat = nn.Linear(input_dim, 128)  
 
         # Final fully connected layer
         self.fc_combined = nn.Linear(input_dim, num_classes) # change input_dim to 128 for post-concat
@@ -69,6 +69,6 @@ class BiResNet(nn.Module):
             combined = torch.cat([resnet_features, embedded_country, non_image_features], dim=1)
 
         # Pass through the new linear layer
-        #combined = torch.relu(self.fc_post_concat(combined))
+        combined = torch.relu(self.fc_post_concat(combined))
 
         return self.fc_combined(combined)
