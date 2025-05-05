@@ -20,9 +20,18 @@ def load_data(csv_data_dir):
 
 
 def prepare_data(df):
-    X = df[['latitude', 'longitude', 'elevation_m', 'humidity_pct', 'ndvi', 'night_lights', 'pop_density', 'slope_deg', 'soil_moisture', 'temperature_c']]
+    # Add `country_id` and one-hot encode it
+    categorical_features = ['country_id']
+    X_categorical = pd.get_dummies(df[categorical_features], drop_first=True)
+    
+    # Select numeric features
+    numeric_features = ['latitude', 'longitude', 'elevation_m', 'humidity_pct', 'ndvi', 'night_lights', 'pop_density', 'slope_deg', 'soil_moisture', 'temperature_c']
+    X_numeric = df[numeric_features]
+    
+    # Combine numeric and one-hot encoded categorical features
+    X = pd.concat([X_numeric, X_categorical], axis=1)
     y = df['label']
-    return X, y
+    return X, y, numeric_features
 
 
 def plot_confusion_matrix(y_true, y_pred, classes, model_type, save_path):
@@ -49,19 +58,23 @@ def main(data_dir, use_cv):
     # Combine train and validation sets
     combined_train_df = pd.concat([train_df, val_df])
 
-    X_train, y_train = prepare_data(combined_train_df)
-    X_test, y_test = prepare_data(test_df)
+    X_train, y_train, numeric_features = prepare_data(combined_train_df)
+    X_test, y_test, _ = prepare_data(test_df)
 
-    # Scale the data
+    # Scale only numeric data
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    X_train_scaled = scaler.fit_transform(X_train[numeric_features])
+    X_test_scaled = scaler.transform(X_test[numeric_features])
+
+    # Append categorical data back to the scaled numeric data
+    X_train_scaled = np.hstack((X_train_scaled, X_train.drop(columns=numeric_features).values))
+    X_test_scaled = np.hstack((X_test_scaled, X_test.drop(columns=numeric_features).values))
 
     # Define models
     models = {
         'Logistic Regression': LogisticRegression(max_iter=5000, solver='saga', C=1),
         'kNN': KNeighborsClassifier(n_neighbors=3),
-        'SVM': SVC(C=10, kernel='linear'),
+        'SVM': SVC(C=0.1, kernel='linear'),
         'Random Forest': RandomForestClassifier(n_estimators=200, max_depth=None, min_samples_split=2)
     }
 
