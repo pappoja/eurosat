@@ -89,7 +89,8 @@ class EuroSatDataset(Dataset):
             'image': torch.FloatTensor(image),
             'features': torch.FloatTensor(features),
             'country_idx': torch.tensor(country_idx).long(),
-            'label': torch.tensor(label)
+            'label': torch.tensor(label),
+            'path': str(img_path)
         }
 
 # Example usage:

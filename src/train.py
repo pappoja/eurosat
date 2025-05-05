@@ -9,7 +9,6 @@ from tqdm import tqdm
 from model.resnet import ResNet
 from model.biresnet import BiResNet
 from model.simplecnn import SimpleCNN
-from model.filmresnet import FiLMResNet
 import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -32,7 +31,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
         country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
         
         optimizer.zero_grad()
-        if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):
+        if isinstance(model, BiResNet):
             outputs = model(images, country_idx, features)
         elif isinstance(model, SimpleCNN):
             outputs = model(images, features, country_idx)
@@ -68,7 +67,7 @@ def validate(model, val_loader, criterion, device, label_to_idx, model_type, inp
             features = batch['features'].to(device) if isinstance(model, BiResNet) or isinstance(model, SimpleCNN) else None
             country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
 
-            if isinstance(model, BiResNet) or isinstance(model, FiLMResNet):
+            if isinstance(model, BiResNet):
                 outputs = model(images, country_idx, features)
             elif isinstance(model, SimpleCNN):
                 outputs = model(images, features, country_idx)
@@ -214,9 +213,6 @@ def main(data_dir, image_dir, model_type, input, num_epochs, use_test_full=False
         model = BiResNet(model_type, num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     elif model_type.lower() in ['resnet18', 'resnet50']:
         model = ResNet(model_type, num_classes).to(device)
-    elif model_type.lower() in ['filmresnet18', 'filmresnet50']:
-        num_non_image_features = len(train_dataset.feature_columns)
-        model = FiLMResNet(model_type, num_classes, num_non_image_features, num_countries, input_type=input).to(device)
     elif model_type.lower() == 'simplecnn':
         num_non_image_features = len(train_dataset.feature_columns)
         model = SimpleCNN(num_classes, num_non_image_features, num_countries, input_type=input).to(device)
@@ -302,11 +298,13 @@ def main(data_dir, image_dir, model_type, input, num_epochs, use_test_full=False
 
     y_true = []
     y_pred = []
+    mislabelled = []
     model.eval()
     with torch.no_grad():
         for batch in test_loader:
             images = batch['image'].to(device)
             labels = batch['label'].to(device)
+            paths = batch['path']  # Assuming the dataset returns paths
             features = batch['features'].to(device) if not isinstance(model, ResNet) else None
             country_idx = batch['country_idx'].to(device) if 'country_idx' in batch and batch['country_idx'] is not None else None
 
@@ -320,6 +318,18 @@ def main(data_dir, image_dir, model_type, input, num_epochs, use_test_full=False
             _, preds = torch.max(outputs, 1)
             y_true.extend(labels.cpu().numpy())
             y_pred.extend(preds.cpu().numpy())
+
+            # Identify mislabelled samples
+            for path, pred, true in zip(paths, preds, labels):
+                if pred != true:
+                    pred_label = list(label_to_idx.keys())[list(label_to_idx.values()).index(pred.item())]
+                    true_label = list(label_to_idx.keys())[list(label_to_idx.values()).index(true.item())]
+                    mislabelled.append(f'Path: {path}; Predicted: {pred_label}; True: {true_label}')
+
+    # Save mislabelled predictions to a text file
+    with open('../results/mistakes.txt', 'w') as f:
+        for line in mislabelled:
+            f.write(f"{line}\n")
 
     # Plot confusion matrix
     classes = list(label_to_idx.keys())
