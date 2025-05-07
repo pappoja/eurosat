@@ -1,6 +1,6 @@
 # EuroSAT Image Classification (with Non-Image Data)
 
-This repository contains code to work with the EuroSAT_MS dataset (13-band Sentinel-2 satellite images) and associated non-image metadata. It includes scripts for preprocessing, feature engineering, and modeling.
+This repository contains code to work with the EuroSAT dataset (Sentinel-2A satellite images) and associated non-image metadata. It includes scripts for preprocessing, feature engineering, and modeling.
 
 ---
 
