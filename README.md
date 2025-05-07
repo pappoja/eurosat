@@ -10,7 +10,8 @@ This repository contains code to work with the EuroSAT_MS dataset (13-band Senti
 eurosat/
 ├── src/                # All core Python code
 │   ├── dataset.py      # Dataset handling and preprocessing
-│   ├── train.py        # Training script for models
+│   ├── train.py        # Training script for deep learning models
+│   ├── simple_model.py # Training script for simple models
 │   └── load_data.py    # Script to generate the `data/` folder
 ├── data/               # Generated training data
 │   ├── csv_data/       # CSV files for dataset splits
@@ -19,7 +20,9 @@ eurosat/
 ├── nonimage_data/      
 │   └── ne_10m_admin_0_countries/   # Files for assigning a country to each coordinate pair
 ├── results/            # Output results
-├── google_earth_data.ipynb # Optional: Download and process Google Earth data
+├── data_inspection.ipynb # Various exploratory data cleaning and analysis tasks
+├── google_earth_data.ipynb # Download and process Google Earth data (also available in csv_data/)
+├── colab_inference.ipynb # Notebook for training models on Google Colab
 ├── .gitignore
 └── README.md
 ```
@@ -30,11 +33,12 @@ eurosat/
 
 This repository **does not include the full dataset** due to size. To run the pipeline:
 
-1. **Download the EuroSAT_MS dataset**:
+1. **Download the EuroSAT dataset**:
    - Link: [EuroSAT Dataset (RGB)](https://madm.dfki.de/files/sentinel/EuroSAT.zip)
 
 2. **Place the data**:
-   - Place the folder `EuroSAT_MS/` (directly from the .zip file above) inside the project root.
+   - Rename the folder `EuroSAT_MS/` (this is a misnomer since it is only the RGB data)
+   - Place the folder (directly from the .zip file above) inside the project root.
    - This includes all `.jpg` files, grouped into folders by each classification label.
    - Note: The coordinates are NOT included here, but they can be accessed in `data/csv_data/dataset_index.csv`.
 
@@ -45,10 +49,10 @@ This repository **does not include the full dataset** due to size. To run the pi
    ```
 
 3. **Generate the processed data**:
-   Run the following script to create the cleaned dataset:
+   Run the following script to create the cleaned dataset (from `src/`):
 
    ```bash
-   python src/load_data.py
+   python load_data.py
    ```
 
    This script will:
@@ -68,12 +72,12 @@ This repository **does not include the full dataset** due to size. To run the pi
 To train models, use the `train.py` script. This script supports various model architectures and input types.
 
 ```bash
-python src/train.py --data-dir <data-dir> --image-dir <image-dir> --model <model-type> --input <input-type> --n_epochs <num-epochs>
+python train.py --data-dir <data-dir> --image-dir <image-dir> --model <model-type> --input <input-type> --n_epochs <num-epochs>
 ```
 
 - `<data-dir>`: Directory containing the processed CSV data.
 - `<image-dir>`: Directory containing the EuroSAT_MS images.
-- `<model-type>`: Model architecture to use (e.g., `simplecnn`, `resnet18`).
+- `<model-type>`: Model architecture to use (e.g., `simplecnn`, `resnet50`, `biresnet50`).
 - `<input-type>`: Input data type (e.g., `image`, `image_country`, `image_country_all`).
 - `<num-epochs>`: Number of training epochs.
 
