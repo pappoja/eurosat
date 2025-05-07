@@ -81,10 +81,4 @@ python train.py --data-dir <data-dir> --image-dir <image-dir> --model <model-typ
 - `<input-type>`: Input data type (e.g., `image`, `image_country`, `image_country_all`).
 - `<num-epochs>`: Number of training epochs.
 
----
-
-## Notes
-
-- Make sure your `EuroSAT_MS/` folder is correctly structured.
-- You can modify `dataset.py` and `train.py` to support different variables or model configurations.
-- If you want to keep certain files in ignored folders, use exception rules in `.gitignore`.
+The simple models (e.g., logistic regression, random forest) must be trained directly from `simple_model.py`.
